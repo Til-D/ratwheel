@@ -104,3 +104,7 @@ dist
 .tern-port
 
 .DS_Store
+assets
+.env
+.env_server
+*.example
