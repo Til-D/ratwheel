@@ -108,3 +108,5 @@ assets
 .env
 .env_server
 *.example
+
+flightplan.js

@@ -1,0 +1,31 @@
+@keyframes wheel {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+div#vis {
+  /*background: black;*/
+  background-image: url("/images/wheel_small.png");
+  margin: 4em 0 0 0;
+  width: 125px;
+  height: 125px;
+  background-size: cover;
+  border-left: 45px solid transparent;
+  border-right: 45px solid transparent;
+  background-clip: content-box;
+  animation-iteration-count: infinite;
+  animation-name: wheel;
+  animation-timing-function: linear;
+}
+
+input#rpm {
+  margin: 2em 2em 5em 2em;
+}
+
+ol#rathistory li {
+  margin-bottom: 5px;
+}

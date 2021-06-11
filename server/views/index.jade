@@ -2,4 +2,20 @@ extends layout
 
 block content
   h1= title
-  p Welcome to #{title}
+  p 
+    | The wheel speed is currently connected to the 
+    a(href="/api/simulator") simulator
+    | , but you can manually adjust its speed. Fun!
+
+  div(id="vis")
+  input(type="number" id="rpm" value="10") 
+  span rpm
+
+  h2 Rat History
+  p
+    | Our latest rat records are live-loaded from our 
+    a(href="/api/history") history
+    | .
+  ol(id="rathistory")
+
+  script(src="/javascripts/wheel.js")

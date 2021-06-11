@@ -1,0 +1,8 @@
+# list of devices
+ratwheel:
+ deviceId: 'ratwheel'
+ diameter: 50
+
+armwheel:
+ deviceId: 'armwheel'
+ diameter: 10
