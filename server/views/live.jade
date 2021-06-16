@@ -1,0 +1,22 @@
+extends layout
+
+block content
+  h1= title
+
+  table
+    tr
+      td Ratwheel
+      td
+        div(id="ratwheel")
+  table
+    tr  
+      td Armwheel
+      td
+        div(id="armwheel")
+
+  p.events
+    | Live events:
+    ul(id="events")
+
+  script(src="/javascripts/socket.io.min.js")
+  script(src="/javascripts/live.js")

@@ -5,9 +5,15 @@ block content
   p 
     | The wheel speed is currently connected to the 
     a(href="/api/simulator") simulator
-    | , but you can manually adjust its speed. Fun!
+    | , but you can manually adjust its speed and see the results in the 
+    a(href="/api/live" target="_blank") live feed
+    | . Fun!
 
   div(id="vis")
+  select(name="deviceSelection" id="deviceSelection")
+    option(value="ratwheel") Ratwheel
+    option(value="armwheel") Armwheel
+  
   input(type="number" id="rpm" value="10") 
   span rpm
 

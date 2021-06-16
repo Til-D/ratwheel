@@ -13,24 +13,59 @@ var fs = require('fs')
 var yaml = require('js-yaml')
 
 var app = express();
+var server = app.listen(process.env.SOCKET_PORT || 3001);
+var io = require('socket.io')(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+// io.startIo(server);
+// next line is the money
+app.set('socketio', io);
+
+connected_clients = []
+io.on('connection', socket => {
+  console.log("new user connected: " + socket.id);
+  connected_clients.push(socket.id);
+  if (connected_clients[0] === socket.id) {
+    // remove the connection listener for any subsequent 
+    // connections with the same ID
+    io.removeAllListeners('connection'); 
+  }
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected: ' + socket.id);
+  })
+
+  socket.on('hello message', msg => {
+  console.log('just got: ', msg);
+  socket.emit('chat message', 'hi from server');
+
+  })
+});
+
 var db = {  
   name: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
 };
-console.log('Database:');
-console.log(db);
+// console.log('Database:');
+// console.log(db);
 
-const nano = require('nano')(process.env.COUCHDB_URL)
+const nano = require('nano')(process.env.COUCHDB_URL);
+var couch;
 nano.db.create(process.env.DB_NAME).then((data) => {
   // success - response is in 'data'
   console.log('New database created: ' + process.env.DB_NAME);
+  couch = nano.use(process.env.DB_NAME);
+  app.set('couch', couch);
 }).catch((err) => {
   // failure - error information is in 'err'
-  console.log('Database already exists: ' + process.env.DB_NAME);
+  console.log('Connected to existing database: ' + process.env.DB_NAME);
+  couch = nano.use(process.env.DB_NAME);
+  app.set('couch', couch);
 })
-
-const couch = nano.use(process.env.DB_NAME);
 
 // read wheel config
 var wheelConfig;
@@ -38,9 +73,10 @@ try {
     fileContents = fs.readFileSync('./wheel_config.yaml', 'utf8');
     wheelConfig = yaml.load(fileContents);
 
+    console.log("Wheel Configurations:");
     console.log(wheelConfig);
 } catch (e) {
-    console.log('Could not read wheel config.')
+    console.log('ERROR reading wheel config:')
     console.log(e);
 }
 
@@ -49,7 +85,6 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 // set local variables
-app.set('couch', couch);
 app.set('wheelConfig', wheelConfig);
 
 app.use(logger('dev'));

@@ -4,13 +4,22 @@ var router = express.Router();
 // Helper functions
 function calculateSessionParameters(session) {
 	console.log('--processSession(): ');
-	console.log(session);
+	// console.log(session);
 
-	var avgRpm,
+	var rpm,
+		avgRpm,
 		duration,
 		distance,
+		kmh,
 		avgKmh,
 		topSpeed;
+
+	// current rpm
+	if(session.rpm.length>0) {
+		rpm = session.rpm[session.rpm.length-1];
+	} else {
+		rpm = 0;
+	}
 
 	// average rpms
 	var tmpTotal = 0;
@@ -22,13 +31,17 @@ function calculateSessionParameters(session) {
 	// duration
 	var start = new Date(session.tsStart),
 		end = new Date(session.tsLast);
-	console.log(start);
-	console.log(end);
+	// console.log(start);
+	// console.log(end);
 	var diff = end-start;
 	duration = diff/(60*1000); //in minutes
 
 	// distance
 	distance = (session.rotations * (2 * Math.PI * session.diameter/2)/1000); //in km
+
+	//km/h
+	var speedInMeter = (rpm * (2 * Math.PI * session.diameter/2));
+	kmh = speedInMeter * 60/1000;
 
 	// average kmh
 	avgKmh = distance / (duration / 60);
@@ -42,10 +55,12 @@ function calculateSessionParameters(session) {
 
 	result = {
 		"deviceId": session.deviceId,
-		"sessionId": session.sessionId,
+		"sessionId": session._id,
 		"rotations": session.rotations,
 		"tsStart": session.tsStart,
 		"tsEnd": session.tsLast,
+		"rpm": rpm, //current rpm
+		"kmh": kmh,
 		"avgRpm": round(avgRpm),
 		"totalMinutes": round(duration),
 		"km": round(distance),
@@ -74,7 +89,7 @@ router.get('/simulator', function(req, res, next) {
 	var duration = minutes-(diff);
 	end.setMinutes(duration);
 	var tsStart = end.getTime();
-	var wheelConfig = req.app.settings.wheelConfig;
+	var wheelConfig = req.app.get('wheelConfig');
 
 	var rotationsRatwheel = diff * 25;
 	var rotationArmwheel = diff * 65; 
@@ -138,10 +153,7 @@ router.get('/simulator', function(req, res, next) {
 
 /* GET livestream */
 router.get('/live', function(req, res, next) {
-	// TODO: retrieve current sessions from database
-  	res.send('offline');
-
-  	// TODO set up a socket
+	res.render('live', { title: 'Live Data' });
 });
 
 /* GET HISTORY */
@@ -149,62 +161,66 @@ router.get('/history', function(req, res, next) {
 
 	// GET: http://localhost:3000/api/history?limit=10
 
-	var wheelConfig = req.app.settings.wheelConfig;
+	var wheelConfig = req.app.get('wheelConfig');
+	var couch = req.app.get('couch');
 
 	var limit = 100; //max
 	if(req.query.limit && req.query.limit <= limit) {
 		limit = req.query.limit;
 	}
 
-	// TODO: query database and return last N sessions
-	// var per_page = 10;
-	// var params   = {include_docs: true, limit: per_page, descending: true}
-	// couch.list(params, function(error,body,headers) {
-	//   console.log(body);
-	// });
+	var params   = {include_docs: true, limit: limit, descending: true} //TODO: sort by tsLast, needs to be done manually
+	couch.list(params).then((body) => {
 
-	var example1 = {
-		"deviceId": "ratwheel",
-		"rpm": [12, 15, 21, 21, 11, 2, 0],
-		"sessionId": "1337", 
-		"rotations": 82, 
-		"tsStart": 1623317930688,
-		"tsLast": 1623318237100
-	};
-	var example2 = {
-		"deviceId": "ratwheel",
-		"rpm": [0, 12, 22, 11, 23, 24, 12, 2, 0],
-		"sessionId": "1338", 
-		"rotations": 45, 
-		"tsStart": 1623320272698,
-		"tsLast": 1623320355081
-	};
-	var example3 = {
-		"deviceId": "armwheel",
-		"rpm": [0, 20, 45, 55, 44, 53, 44, 21, 3, 0],
-		"sessionId": "1339", 
-		"rotations": 280, 
-		"tsStart": 1623320303545,
-		"tsLast": 1623320477771
-	};
-	var sessions = [example1, example2, example3].splice(0, limit);
+	  	var results = [];
+		body.rows.forEach((row) => {
 
-	var results = [];
-	for (var i=0; i<sessions.length; i++) {
+			var doc = row.doc;
+			// add diameter to session
+			var diameter;
+			if (wheelConfig[doc.deviceId]) {
+				diameter = wheelConfig[doc.deviceId].diameter;
+			} else {
+				console.log('WARNING: no diameter specified for: ' + doc.deviceId);
+				diameter = 1;
+			}
+			doc['diameter'] = diameter;
 
-		// add diameter to session
-		var diameter;
-		if (wheelConfig[sessions[i].deviceId]) {
-			diameter = wheelConfig[sessions[i].deviceId].diameter;
-		} else {
-			console.log('WARNING: no diameter specified for: ' + sessions[i].deviceId);
-			diameter = 1;
-		}
-		sessions[i]['diameter'] = diameter;
-		results.push(calculateSessionParameters(sessions[i]));
-	}
-  	
-  	res.send(results);
+			console.log(doc);
+			results.push(calculateSessionParameters(doc));
+		});
+	  	
+	  	res.send(results);
+
+	});
+
+	// test data
+
+	// var example1 = {
+	// 	"deviceId": "ratwheel",
+	// 	"rpm": [12, 15, 21, 21, 11, 2, 0],
+	// 	"sessionId": "1337", 
+	// 	"rotations": 82, 
+	// 	"tsStart": 1623317930688,
+	// 	"tsLast": 1623318237100
+	// };
+	// var example2 = {
+	// 	"deviceId": "ratwheel",
+	// 	"rpm": [0, 12, 22, 11, 23, 24, 12, 2, 0],
+	// 	"sessionId": "1338", 
+	// 	"rotations": 45, 
+	// 	"tsStart": 1623320272698,
+	// 	"tsLast": 1623320355081
+	// };
+	// var example3 = {
+	// 	"deviceId": "armwheel",
+	// 	"rpm": [0, 20, 45, 55, 44, 53, 44, 21, 3, 0],
+	// 	"sessionId": "1339", 
+	// 	"rotations": 280, 
+	// 	"tsStart": 1623320303545,
+	// 	"tsLast": 1623320477771
+	// };
+	// var sessions = [example1, example2, example3].splice(0, limit);
 });
 
 router.get('/', function(req, res, next) {
@@ -234,19 +250,105 @@ router.post('/rpm', function(req, res, next) {
 	console.log('rpm post received: ');
 	console.log(req.body);
 
-	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "ratwheel", "rpm": 33, "sessionId": "new", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
-	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "ratwheel", "rpm": 33, "sessionId": "1337", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
-  	
-  	if(!req.body.sessionId || req.body.sessionId == 'new') {
-  		console.log('creating new session in db');
-  		// TODO create new session in db with deviceId, [rpm], tsStart=ts, rotations=rotations
-  	} else {
-  		console.log('updating session in db: ' + req.body.sessionId);
-  		// TODO update session tsLast=ts, append rpm, rotations+=rotations
-  	}
+	var couch = req.app.get('couch');
+	var wheelConfig = req.app.get('wheelConfig');
+	var io = req.app.get('socketio');
 
-  	//TODO: send back session record database id
-	res.send('ok');
+	// new session
+	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "ratwheel", "rpm": 5, "sessionId": "new", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
+	
+	// unknown session
+	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "armwheel", "rpm": 15, "sessionId": "1337", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
+
+	// update session
+	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "armwheel", "rpm": 25, "sessionId": "ea416637143e74bc2983dd80f100578e", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
+  	
+	// CREATE NEW SESSION
+  	if(!req.body.sessionId || req.body.sessionId == 'new') {
+  		var session = {
+  			"deviceId": req.body.deviceId,
+  			"rpm": [req.body.rpm],
+  			"rotations": req.body.rotations,
+  			"tsStart": req.body.ts
+  		};
+  		couch.insert(session).then((body) => {
+  			if(body.ok) {
+  				console.log("New session created: " + body.id);
+  			} else {
+  				console.log("ERROR inserting new session:")
+  				console.log(body);
+  			}
+
+  			session['_id'] = body.id;
+  			session['_rev'] = body.rev;
+
+  			var diameter;
+			if (wheelConfig[session.deviceId]) {
+				diameter = wheelConfig[session.deviceId].diameter;
+			} else {
+				console.log('WARNING: no diameter specified for: ' + session.deviceId);
+				diameter = 1;
+			}
+			session['diameter'] = diameter;
+
+  			session = calculateSessionParameters(session);
+
+  			io.emit('update', session);
+  			res.send(session);
+  		});
+
+  	} else {
+
+  		// retrieve session from db
+  		couch.get(req.body.sessionId)
+  		.then((body) => {
+  			console.log("Updating existing session:");
+  			console.log(body);
+
+  			// update values
+  			body.rpm.push(req.body.rpm);
+  			body.rotations += req.body.rotations;
+  			body.tsLast = req.body.ts;
+  			couch.insert(body).then((resp) => {
+	  			if(resp.ok) {
+	  				console.log("Session updated: " + resp.id);
+	  				
+	  				body['_rev'] = resp.rev;
+
+	  				var diameter;
+					if (wheelConfig[body.deviceId]) {
+						diameter = wheelConfig[body.deviceId].diameter;
+					} else {
+						console.log('WARNING: no diameter specified for: ' + body.deviceId);
+						diameter = 1;
+					}
+					body['diameter'] = diameter;
+	  				var session = calculateSessionParameters(body);
+
+	  				io.emit('update', session);
+	  				res.send(session);
+	  			} else {
+	  				console.log("ERROR inserting new session:")
+	  				console.log(resp);
+
+	  				res.send(resp);
+	  			}
+	  		});
+  		})
+  		.catch((err) => {
+  			console.log("Could not find session: " + req.body.sessionId);
+  			// console.log(err);
+  			res.send(404);
+  		});
+  	}
+	// io.emit('update', {
+	// 	"deviceId": req.body.deviceId,
+	// 	"sessionId": req.body.sessionId,
+	// 	"rpm": req.body.rpm,
+	// 	"rotations": req.body.rpm,
+	// 	"ts": req.body.ts
+	// });
+
 });
 
 

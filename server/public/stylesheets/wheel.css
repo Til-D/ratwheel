@@ -7,7 +7,7 @@
   }
 }
 
-div#vis {
+div#vis, div#ratwheel, div#armwheel {
   /*background: black;*/
   background-image: url("/images/wheel_small.png");
   margin: 4em 0 0 0;
@@ -28,4 +28,8 @@ input#rpm {
 
 ol#rathistory li {
   margin-bottom: 5px;
+}
+
+.events {
+  margin-top: 50px;
 }
