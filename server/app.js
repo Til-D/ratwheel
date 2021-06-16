@@ -9,6 +9,9 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var apiRouter = require('./routes/api');
 
+var fs = require('fs')
+var yaml = require('js-yaml')
+
 var app = express();
 var db = {  
   name: process.env.DB_NAME,
@@ -29,24 +32,38 @@ nano.db.create(process.env.DB_NAME).then((data) => {
 
 const couch = nano.use(process.env.DB_NAME);
 
-var per_page = 10;
-var params   = {include_docs: true, limit: per_page, descending: true}
-couch.list(params, function(error,body,headers) {
-  console.log(body);
-});
+// read wheel config
+var wheelConfig;
+try {
+    fileContents = fs.readFileSync('./wheel_config.yaml', 'utf8');
+    wheelConfig = yaml.load(fileContents);
 
-// HIER WEITERMACHEN
-
+    console.log(wheelConfig);
+} catch (e) {
+    console.log('Could not read wheel config.')
+    console.log(e);
+}
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
+
+// set local variables
+app.set('couch', couch);
+app.set('wheelConfig', wheelConfig);
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// enable Cross Origin Resource Sharing (CORS)
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
@@ -68,5 +85,4 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-module.exports = couch
 module.exports = app;

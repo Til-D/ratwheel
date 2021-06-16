@@ -3,7 +3,7 @@ var router = express.Router();
 
 // Helper functions
 function calculateSessionParameters(session) {
-	console.log('processSession(): ');
+	console.log('--processSession(): ');
 	console.log(session);
 
 	var avgRpm,
@@ -11,14 +11,6 @@ function calculateSessionParameters(session) {
 		distance,
 		avgKmh,
 		topSpeed;
-
-	//TODO: get diameter from server_config.yml according to deviceId
-	var diameter;
-	if(session.deviceId=='ratwheel') {
-		diameter = 3.5; //in meters
-	} else { //armwheel
-		diameter = 1;
-	}
 
 	// average rpms
 	var tmpTotal = 0;
@@ -36,7 +28,7 @@ function calculateSessionParameters(session) {
 	duration = diff/(60*1000); //in minutes
 
 	// distance
-	distance = (session.rotations * (2 * Math.PI * diameter/2)/1000); //in km
+	distance = (session.rotations * (2 * Math.PI * session.diameter/2)/1000); //in km
 
 	// average kmh
 	avgKmh = distance / (duration / 60);
@@ -45,7 +37,7 @@ function calculateSessionParameters(session) {
 	var maxRpm = session.rpm.reduce(function (a, b) {
 		return Math.max(a, b);
 	});
-	var distanceInMeter = (maxRpm * (2 * Math.PI * diameter/2));
+	var distanceInMeter = (maxRpm * (2 * Math.PI * session.diameter/2));
 	topSpeed = distanceInMeter * 60/1000;
 
 	result = {
@@ -82,12 +74,10 @@ router.get('/simulator', function(req, res, next) {
 	var duration = minutes-(diff);
 	end.setMinutes(duration);
 	var tsStart = end.getTime();
+	var wheelConfig = req.app.settings.wheelConfig;
 
 	var rotationsRatwheel = diff * 25;
 	var rotationArmwheel = diff * 65; 
-
-	console.log('lulu');
-	console.log(diff);
   
 	var example1 = {
 		"deviceId": "ratwheel",
@@ -109,7 +99,18 @@ router.get('/simulator', function(req, res, next) {
 	var sessions = [example1, example2];
 
 	var results = [];
+
 	for (var i=0; i<sessions.length; i++) {
+
+		// add diameter to session
+		var diameter;
+		if (wheelConfig[sessions[i].deviceId]) {
+			diameter = wheelConfig[sessions[i].deviceId].diameter;
+		} else {
+			console.log('WARNING: no diameter specified for: ' + sessions[i].deviceId);
+			diameter = 1;
+		}
+		sessions[i]['diameter'] = diameter;
 		results.push(calculateSessionParameters(sessions[i]));
 	}
 
@@ -139,6 +140,8 @@ router.get('/simulator', function(req, res, next) {
 router.get('/live', function(req, res, next) {
 	// TODO: retrieve current sessions from database
   	res.send('offline');
+
+  	// TODO set up a socket
 });
 
 /* GET HISTORY */
@@ -146,12 +149,20 @@ router.get('/history', function(req, res, next) {
 
 	// GET: http://localhost:3000/api/history?limit=10
 
+	var wheelConfig = req.app.settings.wheelConfig;
+
 	var limit = 100; //max
 	if(req.query.limit && req.query.limit <= limit) {
 		limit = req.query.limit;
 	}
 
 	// TODO: query database and return last N sessions
+	// var per_page = 10;
+	// var params   = {include_docs: true, limit: per_page, descending: true}
+	// couch.list(params, function(error,body,headers) {
+	//   console.log(body);
+	// });
+
 	var example1 = {
 		"deviceId": "ratwheel",
 		"rpm": [12, 15, 21, 21, 11, 2, 0],
@@ -180,6 +191,16 @@ router.get('/history', function(req, res, next) {
 
 	var results = [];
 	for (var i=0; i<sessions.length; i++) {
+
+		// add diameter to session
+		var diameter;
+		if (wheelConfig[sessions[i].deviceId]) {
+			diameter = wheelConfig[sessions[i].deviceId].diameter;
+		} else {
+			console.log('WARNING: no diameter specified for: ' + sessions[i].deviceId);
+			diameter = 1;
+		}
+		sessions[i]['diameter'] = diameter;
 		results.push(calculateSessionParameters(sessions[i]));
 	}
   	
@@ -189,7 +210,6 @@ router.get('/history', function(req, res, next) {
 router.get('/', function(req, res, next) {
   res.send('ok');
 });
-
 
 
 /* POST PING */
