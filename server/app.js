@@ -13,45 +13,6 @@ var fs = require('fs')
 var yaml = require('js-yaml')
 
 var app = express();
-var server = app.listen(process.env.SOCKET_PORT || 3001);
-var io = require('socket.io')(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
-// io.startIo(server);
-// next line is the money
-app.set('socketio', io);
-
-connected_clients = []
-io.on('connection', socket => {
-  console.log("new user connected: " + socket.id);
-  connected_clients.push(socket.id);
-  if (connected_clients[0] === socket.id) {
-    // remove the connection listener for any subsequent 
-    // connections with the same ID
-    io.removeAllListeners('connection'); 
-  }
-
-  socket.on('disconnect', () => {
-    console.log('user disconnected: ' + socket.id);
-  })
-
-  socket.on('hello message', msg => {
-  console.log('just got: ', msg);
-  socket.emit('chat message', 'hi from server');
-
-  })
-});
-
-var db = {  
-  name: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-};
-// console.log('Database:');
-// console.log(db);
 
 const nano = require('nano')(process.env.COUCHDB_URL);
 var couch;
@@ -121,3 +82,5 @@ app.use(function(err, req, res, next) {
 });
 
 module.exports = app;
+
+// server.listen(3000, "127.0.0.1") //port

@@ -1,4 +1,3 @@
-const SOCKET_PORT = 3001;
 
 var $events = document.getElementById('events');
 
@@ -8,9 +7,9 @@ var $events = document.getElementById('events');
 //   $div.style.animationDuration = duration + 's';
 // }
 
-var  socket_url = ':' + SOCKET_PORT;
-console.log('connecting to socket at: ' + socket_url);
-var socket = io.connect(socket_url);
+// var  socket_url = ':' + SOCKET_PORT;
+console.log('connecting to socket');
+var socket = io();
 socket.on('update', function(data) {
 	console.log('update received:');
 	console.log(data);
