@@ -26,7 +26,7 @@ def ping_server(server_url, device_id):
 	ping = requests.post(ping_url, json={"deviceId": device_id})
 	print('- ping sent to server: ' + ping_url)
 	print('+ status code: ' + str(ping.status_code))
-	print('+ repsonse: ' + text)
+	print('+ repsonse: ' + ping.text)
 
 def post_rotations(server_url, device_id, rpm, session_id, rotations, ts):
 	post_url = server_url + '/api/rpm'
