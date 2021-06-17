@@ -6,7 +6,7 @@
 # /_/|_/_/  /_/___/ .__/\_, /
 #                /_/   /___/
 #
-#       Hall Effect Sensor
+#       Odometer
 #
 # This script tests the sensor on GPIO17.
 #

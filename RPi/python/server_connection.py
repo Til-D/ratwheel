@@ -18,8 +18,8 @@ DEVICE_ID = 'ratwheel_test'
 
 def main():
 
-	# ping_server(SERVER_TEST, DEVICE_ID)
-	post_rotations(SERVER_TEST, DEVICE_ID, 54, "test1337", 120, int(time.time()))
+	ping_server(SERVER_PROD, DEVICE_ID)
+	post_rotations(SERVER_PROD, DEVICE_ID, 54, "test1337", 120, int(time.time()))
 
 def ping_server(server_url, device_id):
 	ping_url = server_url + '/api/ping'
