@@ -3,10 +3,11 @@ var router = express.Router();
 
 // Helper functions
 function calculateSessionParameters(session) {
-	console.log('--processSession(): ');
+	// console.log('--processSession(): ');
 	// console.log(session);
 
-	var rpm,
+	var status,
+		rpm,
 		avgRpm,
 		duration,
 		distance,
@@ -19,6 +20,12 @@ function calculateSessionParameters(session) {
 		rpm = session.rpm[session.rpm.length-1];
 	} else {
 		rpm = 0;
+	}
+
+	if (rpm>0) {
+		status = 'active'
+	} else {
+		status = 'inactive'
 	}
 
 	// average rpms
@@ -56,6 +63,7 @@ function calculateSessionParameters(session) {
 	result = {
 		"deviceId": session.deviceId,
 		"sessionId": session._id,
+		"status": status,
 		"rotations": session.rotations,
 		"tsStart": session.tsStart,
 		"tsEnd": session.tsLast,
@@ -261,7 +269,7 @@ router.post('/rpm', function(req, res, next) {
 	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "armwheel", "rpm": 15, "sessionId": "1337", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
 
 	// update session
-	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "armwheel", "rpm": 25, "sessionId": "ea416637143e74bc2983dd80f100578e", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
+	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "armwheel", "rpm": 25, "sessionId": "ea416637143e74bc2983dd80f100106a", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
   	
 	// CREATE NEW SESSION
   	if(!req.body.sessionId || req.body.sessionId == 'new') {
@@ -271,7 +279,8 @@ router.post('/rpm', function(req, res, next) {
   			"rotations": req.body.rotations,
   			"tsStart": req.body.ts
   		};
-  		couch.insert(session).then((body) => {
+  		couch.insert(session)
+  		.then((body) => {
   			if(body.ok) {
   				console.log("New session created: " + body.id);
   			} else {
@@ -295,6 +304,11 @@ router.post('/rpm', function(req, res, next) {
 
   			io.emit('update', session);
   			res.send(session);
+  		})
+  		.catch((err) => {
+  			console.log("ERROR: could not create new session");
+  			console.log(err);
+  			res.send('error');
   		});
 
   	} else {

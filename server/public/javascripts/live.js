@@ -14,10 +14,14 @@ socket.on('update', function(data) {
 	console.log('update received:');
 	console.log(data);
 
-	var duration = 60 / data.rpm;
-	document.getElementById(data.deviceId).style.animationDuration = duration + 's'
+	if(data.status=='active') {
+		var duration = 60 / data.rpm;
+		document.getElementById(data.deviceId).style.animationDuration = duration + 's'
+	} else {
+		document.getElementById(data.deviceId).style.animationDuration = 0 + 's'
+	}
 
     var item = document.createElement('li');
-    item.textContent = data.deviceId + ': ' + data.rpm + 'rpm (session: ' + data.sessionId + ')';
+    item.textContent = data.deviceId + ': ' + data.rpm + ' rpm (session: ' + data.sessionId + '), status: ' + data.status;
     $events.appendChild(item);
   });
