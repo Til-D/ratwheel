@@ -110,3 +110,5 @@ assets
 *.example
 
 flightplan.js
+
+*.pyc
