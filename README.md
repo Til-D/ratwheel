@@ -14,6 +14,7 @@ Components:
 ...
 
 Make sure to set the following environment variables:
+    
     export DEVICE_ID=ratwheel
     export SESSION_TIMEOUT=10.0
 
