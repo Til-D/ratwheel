@@ -241,15 +241,21 @@ router.post('/ping', function(req, res, next) {
 	
 	// curl -X POST http://localhost:3000/api/ping -d '{"deviceId": "ratwheel"}' -H 'Content-Type: application/json'
 
+	var devices = req.app.get('devices');
+
 	if(req.body.deviceId) {
 		console.log('ping received from: ' + req.body.deviceId);
 
-		// TODO: update db 'last heard from' (dashboard function)
+		if(devices[req.body.deviceId]) {
+			var device = devices[req.body.deviceId];
+			device['last_ping'] = Date.now();
+			console.log(devices);
+		}		
+
 	} else {
 		console.log('ping received from: unknown');
 	}
-	
-  res.send('ok');
+	res.send('ok');
 });
 
 /* POST ROTATION */

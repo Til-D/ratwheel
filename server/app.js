@@ -81,6 +81,13 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
+// global state variables
+app.set('devices', {
+  "ratwheel": {},
+  "armwheel": {},
+  "testwheel": {}
+});
+
 module.exports = app;
 
 // server.listen(3000, "127.0.0.1") //port
