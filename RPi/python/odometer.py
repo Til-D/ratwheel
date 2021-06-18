@@ -36,7 +36,7 @@ def trigger_timeout():
   global timer
 
   if(not timedout): # notify server that wheel has stopped
-      post_rotations(SERVER_URL, DEVICE_ID, [0], session_id, 0, now())
+      post_rotations(SERVER_URL, DEVICE_ID, [0], session_id, rotations, now())
   
   # init new session
   session_id = "new"
@@ -113,9 +113,10 @@ def sensorCallback(channel):
           print("rpm: " + str(avg_rpm) + ", rotations: " + str(rotations)) 
           
           # send rpm to server and rempty rotations
+          num_rotations = rotations # save value before emptying
           rotations = 0
           rpms = []
-          session_id = post_rotations(SERVER_URL, DEVICE_ID, avg_rpm, session_id, rotations, timestamp)
+          session_id = post_rotations(SERVER_URL, DEVICE_ID, avg_rpm, session_id, num_rotations, timestamp)
           print('+ session id: ' + session_id)
           
       else: #timeout
