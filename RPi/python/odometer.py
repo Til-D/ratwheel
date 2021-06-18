@@ -74,12 +74,12 @@ def sensorCallback(channel):
   
   if pole:
     # No magnet
-    # print("Sensor HIGH " + stamp)
-    pass
+    print("Sensor HIGH " + stamp)
+    # pass
     
   else:
     # Magnet
-    # print("Sensor LOW " + stamp)
+    print("Sensor LOW " + stamp)
     
     # calculate rpm
     diff = timestamp - ts_last #ms

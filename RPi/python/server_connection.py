@@ -20,7 +20,7 @@ SERVER_TEST = 'http://localhost:3000'
 def main():
 
     ping_server(SERVER_PROD, os.environ['DEVICE_ID'])
-    post_rotations(SERVER_PROD, os.environ['DEVICE_ID'], 54, "new", 120, int(time.time()))
+    # post_rotations(SERVER_PROD, os.environ['DEVICE_ID'], 54, "new", 120, int(time.time()))
 
 def ping_server(server_url, device_id):
     ping_url = server_url + '/api/ping'
