@@ -10,7 +10,7 @@
 div#vis, div#ratwheel, div#armwheel {
   /*background: black;*/
   background-image: url("/images/wheel_small.png");
-  margin: 4em 0 0 0;
+  margin: 0 0 0 0;
   width: 125px;
   height: 125px;
   background-size: cover;
@@ -32,4 +32,17 @@ ol#rathistory li {
 
 .events {
   margin-top: 50px;
+}
+
+#ratwheel_speed, #armwheel_speed, #armwheel_likes, #ratwheel_likes {
+  font-size: 40px;
+}
+
+.wheel {
+  margin-top: 4em;
+}
+
+td {
+  vertical-align: center;
+  min-width: 100px;
 }

@@ -1,5 +1,8 @@
 var express = require('express');
 var router = express.Router();
+var moment = require('moment');
+
+var DATE_FORMAT = ("MMMM Do HH:mm");
 
 // Helper functions
 function calculateSessionParameters(session) {
@@ -13,7 +16,8 @@ function calculateSessionParameters(session) {
 		distance,
 		kmh,
 		avgKmh,
-		topSpeed;
+		topSpeed,
+		likes;
 
 	// current rpm
 	if(session.rpm.length>0) {
@@ -60,6 +64,13 @@ function calculateSessionParameters(session) {
 	var distanceInMeter = (maxRpm * (2 * Math.PI * session.diameter/2));
 	topSpeed = distanceInMeter * 60/1000;
 
+	// init likes
+	if(session.likes) {
+		likes = session.likes;
+	} else {
+		likes = 0;
+	}
+
 	result = {
 		"deviceId": session.deviceId,
 		"sessionId": session._id,
@@ -73,7 +84,8 @@ function calculateSessionParameters(session) {
 		"totalMinutes": round(duration),
 		"km": round(distance),
 		"avgKmh": round(avgKmh),
-		"topSpeed": round(topSpeed)
+		"topSpeed": round(topSpeed),
+		"likes": likes
 	}
 	return result;
 }
@@ -161,7 +173,8 @@ router.get('/simulator', function(req, res, next) {
 
 /* GET livestream */
 router.get('/live', function(req, res, next) {
-	res.render('live', { title: 'Live Data' });
+	var devices = req.app.get('devices');
+	res.render('live', { title: 'Live Data', devices: devices});
 });
 
 /* GET HISTORY */
@@ -239,22 +252,73 @@ router.get('/', function(req, res, next) {
 /* POST PING */
 router.post('/ping', function(req, res, next) {
 	
-	// curl -X POST http://localhost:3000/api/ping -d '{"deviceId": "ratwheel"}' -H 'Content-Type: application/json'
+	// curl -X POST http://localhost:3000/api/ping -d '{"deviceId": "armwheel"}' -H 'Content-Type: application/json'
+	// curl -X POST http://45.113.235.98/api/ping -d '{"deviceId": "ratwheel"}' -H 'Content-Type: application/json'
 
 	var devices = req.app.get('devices');
+	var io = req.app.get('socketio');
 
 	if(req.body.deviceId) {
 		console.log('ping received from: ' + req.body.deviceId);
 
 		if(devices[req.body.deviceId]) {
 			var device = devices[req.body.deviceId];
-			device['last_ping'] = Date.now();
-			console.log(devices);
-		}		
-
+			device['last_ping'] = moment(Date.now()).format(DATE_FORMAT);
+		}
 	} else {
 		console.log('ping received from: unknown');
 	}
+	io.emit('ping', devices);
+	res.send('ok');
+});
+
+/* POST LIKE */
+router.post('/like', function(req, res, next) {
+	
+	// curl -X POST http://localhost:3000/api/like -d '{"deviceId": "armwheel"}' -H 'Content-Type: application/json'
+
+	var devices = req.app.get('devices');
+	var couch = req.app.get('couch');
+	var io = req.app.get('socketio');
+
+	if(req.body.deviceId) {
+		console.log('like received for: ' + req.body.deviceId);
+
+		if(devices[req.body.deviceId]) {
+			var device = devices[req.body.deviceId];
+
+			if(device.session) {
+				device.session.likes += 1
+			
+				//update session in db
+				// retrieve session from db
+		  		couch.get(device.session.sessionId)
+		  		.then((body) => {
+		  			console.log("Updating likes in session:");
+		  			console.log(body);
+
+		  			// update values
+		  			body.likes = device.session.likes;
+		  			couch.insert(body).then((resp) => {
+			  			if(resp.ok) {
+			  				console.log("Session updated: " + resp.id);
+			  			} else {
+			  				console.log("ERROR updaing session:")
+			  				console.log(resp);
+			  			}
+			  		});
+		  		})
+		  		.catch((err) => {
+		  			console.log("Could not find session: " + req.body.sessionId);
+		  			// console.log(err);
+		  			res.send(404);
+		  		});
+		  	} else {
+		  		console.log("No active session in progress.");
+		  	}
+		}
+	}
+	io.emit('like', devices);
 	res.send('ok');
 });
 
@@ -267,6 +331,7 @@ router.post('/rpm', function(req, res, next) {
 	var couch = req.app.get('couch');
 	var wheelConfig = req.app.get('wheelConfig');
 	var io = req.app.get('socketio');
+	var devices = req.app.get('devices');
 
 	// new session
 	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "ratwheel", "rpm": 5, "sessionId": "new", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
@@ -283,7 +348,8 @@ router.post('/rpm', function(req, res, next) {
   			"deviceId": req.body.deviceId,
   			"rpm": [req.body.rpm],
   			"rotations": req.body.rotations,
-  			"tsStart": req.body.ts
+  			"tsStart": req.body.ts,
+  			"likes": 0
   		};
   		couch.insert(session)
   		.then((body) => {
@@ -308,6 +374,7 @@ router.post('/rpm', function(req, res, next) {
 
   			session = calculateSessionParameters(session);
 
+  			devices[session.deviceId]['session'] = session;
   			io.emit('update', session);
   			res.send(session);
   		})
@@ -345,6 +412,7 @@ router.post('/rpm', function(req, res, next) {
 					body['diameter'] = diameter;
 	  				var session = calculateSessionParameters(body);
 
+	  				devices[session.deviceId]['session'] = session;
 	  				io.emit('update', session);
 	  				res.send(session);
 	  			} else {

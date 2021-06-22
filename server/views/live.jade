@@ -3,19 +3,59 @@ extends layout
 block content
   h1= title
 
-  table
+  table.wheel
     tr
       td Ratwheel
       td
         div(id="ratwheel")
-  table
+      td
+        if devices.ratwheel.session
+          span(id="ratwheel_speed")= devices.ratwheel.session.rpm
+        else
+          span(id="ratwheel_speed") 0
+        | rpm
+      td 
+        if devices.ratwheel.session
+          span(id="ratwheel_likes")= devices.ratwheel.session.likes
+        else
+          span(id="ratwheel_likes") 0
+        | likes
+  table.wheel
     tr  
       td Armwheel
       td
         div(id="armwheel")
+      td
+        if devices.armwheel.session
+          span(id="armwheel_speed")= devices.armwheel.session.rpm
+        else
+          span(id="armwheel_speed") 0
+        | rpm
+      td 
+        if devices.armwheel.session
+          span(id="armwheel_likes")= devices.armwheel.session.likes
+        else
+          span(id="armwheel_likes") 0
+        | likes
 
   p.events
-    | Live events:
+    h2 Live events:
+    
+    table
+      tr
+        td Last ping from Ratwheel:
+        if devices.ratwheel.last_ping 
+          td(id="last_ping_ratwheel")= devices.ratwheel.last_ping
+        else
+          td(id="last_ping_ratwheel") nothing yet
+      
+      tr
+        td Last ping from Armwheel:
+        if devices.armwheel.last_ping 
+          td(id="last_ping_armwheel")= devices.armwheel.last_ping
+        else
+          td(id="last_ping_armwheel") nothing yet
+
     ul(id="events")
 
   script(src="/javascripts/socket.io.js")
