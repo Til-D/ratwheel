@@ -276,6 +276,7 @@ router.post('/ping', function(req, res, next) {
 router.post('/like', function(req, res, next) {
 	
 	// curl -X POST http://localhost:3000/api/like -d '{"deviceId": "armwheel"}' -H 'Content-Type: application/json'
+	// curl -X POST http://45.113.235.98/api/like -d '{"deviceId": "ratwheel"}' -H 'Content-Type: application/json'
 
 	var devices = req.app.get('devices');
 	var couch = req.app.get('couch');

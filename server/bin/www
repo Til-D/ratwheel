@@ -27,7 +27,11 @@ var server = http.createServer(app);
  */
 var socketApi = require('../socketApi');
 var io = socketApi.io;
-io.attach(server);
+io.attach(server, {
+  cors: {
+    origin: ''
+  }
+});
 
 app.set('socketio', io);
 
