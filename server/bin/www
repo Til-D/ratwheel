@@ -29,7 +29,7 @@ var socketApi = require('../socketApi');
 var io = socketApi.io;
 io.attach(server, {
   cors: {
-    origin: ''
+    origin: '*'
   }
 });
 
