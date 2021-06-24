@@ -17,6 +17,9 @@ Make sure to set the following environment variables:
     
     export DEVICE_ID=ratwheel
     export SESSION_TIMEOUT=10.0
+    export SUBMISSION_FREQUENCY=1
+
+``DEVICE_ID`` identifies the device, ``SESSION_TIMEOUT`` sets the time interval (in seconds) for a new session to start (i.e., if the wheel does not turn for the specified time, the device creates a new session for a new user), and ``SUBMISSION_FREQUENCY`` determines the frequency in which the current rpm are sent to the server.
 
 ### Start Odometer on Startup
 To execute the python script on startup make sure to install a cronjob using
