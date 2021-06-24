@@ -46,7 +46,7 @@ def trigger_timeout():
   timer = None
 
 # Globals
-GRANULARITY = os.environ['SUBMISSION_FREQUENCY'] #determines how many rotations determine rpm
+GRANULARITY = int(os.environ['SUBMISSION_FREQUENCY']) #determines how many rotations determine rpm
 SERVER_URL = SERVER_PROD
 DEVICE_ID = os.environ['DEVICE_ID']
 TIMEOUT = float(os.environ['SESSION_TIMEOUT']) #sec
