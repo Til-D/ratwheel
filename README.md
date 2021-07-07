@@ -29,9 +29,9 @@ To make sure the odometer pings the server in regular intervals also add the fol
 
     */1 * * * * . $HOME/.profile; python /home/pi/code/ratwheel/RPi/python/server_connection.py &
 
-## Node Express Server
+# Node Express Server
+
+Install packages using ``npm install``. Start via ``npm start``.
 
 ## TODOs
-- set up cronjob to ping server in regular intervals
-- server: read pings (last heard from on live feed)
-- server: integrate likes
+- server: hold session history in memory
