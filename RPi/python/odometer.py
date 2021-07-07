@@ -46,7 +46,7 @@ def trigger_timeout():
   timer = None
 
 # Globals
-GRANULARITY = 2 #determines how many rotations determine rpm
+GRANULARITY = int(os.environ['SUBMISSION_FREQUENCY']) #determines how many rotations determine rpm
 SERVER_URL = SERVER_PROD
 DEVICE_ID = os.environ['DEVICE_ID']
 TIMEOUT = float(os.environ['SESSION_TIMEOUT']) #sec
@@ -159,3 +159,4 @@ GPIO.add_event_detect(17, GPIO.BOTH, callback=sensorCallback, bouncetime=200)
 
 if __name__=="__main__":
    main()
+        
