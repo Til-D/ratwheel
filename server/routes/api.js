@@ -30,7 +30,6 @@ function calculateSessionParameters(session) {
 		status = 'active';
 	} else {
 		status = 'inactive';
-		//TODO: add session to history
 	}
 
 	// average rpms
@@ -184,17 +183,18 @@ router.get('/history', function(req, res, next) {
 	// GET: http://localhost:3000/api/history?limit=10
 
 	var wheelConfig = req.app.get('wheelConfig');
+	var history = req.app.get('history');
 	var couch = req.app.get('couch');
 
-	var limit = 100; //max
-	if(req.query.limit && req.query.limit <= limit) {
-		limit = req.query.limit;
-	}
+	// var limit = wheelConfig['history']; //max
+	// if(req.query.limit && req.query.limit <= limit) {
+	// 	limit = req.query.limit;
+	// }
 
-	var params   = {include_docs: true, limit: limit, descending: true} //TODO: sort by tsLast, needs to be done manually
+	var params   = {include_docs: true};
 	couch.list(params).then((body) => {
 
-	  	var results = [];
+	  	var totalDistance = 0;
 		body.rows.forEach((row) => {
 
 			var doc = row.doc;
@@ -207,24 +207,61 @@ router.get('/history', function(req, res, next) {
 				diameter = 1;
 			}
 			doc['diameter'] = diameter;
+			session = calculateSessionParameters(doc);
+			console.log(session);
 
-			// console.log(doc);
-			results.push(calculateSessionParameters(doc));
+			if(session['km']) {
+				totalDistance += session['km'];
+			}
 		});
 	  	
-	  	var totalDistance = 0; //TODO: read from whole database //in km
-	  	for(var i=0; i<results.length; i++) {
-	  		if(results[i]['km']) {
-	  			totalDistance += results[i]['km'];	
-	  		}
-	  	}
-	  	history = {
-	  		"totalKm": round(totalDistance),
-	  		"sessions": results
-	  	}
+	  	history['totalKm'] = round(totalDistance);
 	  	res.send(history);
 
 	});
+
+	// OLD
+	// var couch = req.app.get('couch');
+
+	// var limit = wheelConfig['history']; //max
+	// if(req.query.limit && req.query.limit <= limit) {
+	// 	limit = req.query.limit;
+	// }
+
+	// var params   = {include_docs: true, limit: limit, descending: true} //TODO: sort by tsLast, needs to be done manually
+	// couch.list(params).then((body) => {
+
+	//   	var results = [];
+	// 	body.rows.forEach((row) => {
+
+	// 		var doc = row.doc;
+	// 		// add diameter to session
+	// 		var diameter;
+	// 		if (wheelConfig[doc.deviceId]) {
+	// 			diameter = wheelConfig[doc.deviceId].diameter;
+	// 		} else {
+	// 			console.log('WARNING: no diameter specified for: ' + doc.deviceId);
+	// 			diameter = 1;
+	// 		}
+	// 		doc['diameter'] = diameter;
+
+	// 		// console.log(doc);
+	// 		results.push(calculateSessionParameters(doc));
+	// 	});
+	  	
+	//   	var totalDistance = 0; //TODO: read from whole database //in km
+	//   	for(var i=0; i<results.length; i++) {
+	//   		if(results[i]['km']) {
+	//   			totalDistance += results[i]['km'];	
+	//   		}
+	//   	}
+	//   	history = {
+	//   		"totalKm": round(totalDistance),
+	//   		"sessions": results
+	//   	}
+	//   	res.send(history);
+
+	// });
 
 	// test data
 
@@ -315,7 +352,7 @@ router.post('/like', function(req, res, next) {
 			  			if(resp.ok) {
 			  				console.log("Session updated: " + resp.id);
 			  			} else {
-			  				console.log("ERROR updaing session:")
+			  				console.log("ERROR updating session:")
 			  				console.log(resp);
 			  			}
 			  		});
@@ -346,6 +383,7 @@ router.post('/rpm', function(req, res, next) {
 	var wheelConfig = req.app.get('wheelConfig');
 	var io = req.app.get('socketio');
 	var devices = req.app.get('devices');
+	var history = req.app.get('history');
 
 	// new session
 	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "ratwheel", "rpm": 5, "sessionId": "new", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
@@ -354,7 +392,7 @@ router.post('/rpm', function(req, res, next) {
 	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "armwheel", "rpm": 15, "sessionId": "1337", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
 
 	// update session
-	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "armwheel", "rpm": 25, "sessionId": "ea416637143e74bc2983dd80f100106a", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
+	// curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "armwheel", "rpm": 25, "sessionId": "fc6bb1930ca1352fac0f27d949003425", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'
   	
 	// CREATE NEW SESSION
   	if(!req.body.sessionId || req.body.sessionId == 'new') {
@@ -387,6 +425,12 @@ router.post('/rpm', function(req, res, next) {
 			session['diameter'] = diameter;
 
   			session = calculateSessionParameters(session);
+
+  			//add to history
+  			history['sessions'].push(session); //add to back of queue
+  			if(history['sessions'].length > wheelConfig['history']) {
+  				history['sessions'].shift(); //remove first 
+  			}
 
   			devices[session.deviceId]['session'] = session;
   			io.emit('update', session);
@@ -425,6 +469,23 @@ router.post('/rpm', function(req, res, next) {
 					}
 					body['diameter'] = diameter;
 	  				var session = calculateSessionParameters(body);
+
+	  				//update history
+	  				var in_history = false;
+	  				for(i=history['sessions'].length-1; i>=0; i--) {
+	  					var h_session = history['sessions'][i];
+	  					if(h_session['sessionId']==session['sessionId']) {
+	  						history['sessions'][i] = session;
+	  						in_history = true;
+	  						break;
+	  					}
+	  				}
+	  				if(!in_history) { //unknown session? > add to back of queue
+	  					history['sessions'].push(session); 
+			  			if(history['sessions'].length > wheelConfig['history']) {
+			  				history['sessions'].shift(); //remove first 
+			  			}
+	  				}
 
 	  				devices[session.deviceId]['session'] = session;
 	  				io.emit('update', session);

@@ -1,4 +1,4 @@
-history: 2
+history: 100
 # list of devices
 ratwheel:
  deviceId: 'ratwheel'
