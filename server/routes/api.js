@@ -27,9 +27,10 @@ function calculateSessionParameters(session) {
 	}
 
 	if (rpm>0) {
-		status = 'active'
+		status = 'active';
 	} else {
-		status = 'inactive'
+		status = 'inactive';
+		//TODO: add session to history
 	}
 
 	// average rpms
@@ -82,7 +83,7 @@ function calculateSessionParameters(session) {
 		"kmh": kmh,
 		"avgRpm": round(avgRpm),
 		"totalMinutes": round(duration),
-		"km": round(distance),
+		"km": distance,
 		"avgKmh": round(avgKmh),
 		"topSpeed": round(topSpeed),
 		"likes": likes
@@ -207,11 +208,21 @@ router.get('/history', function(req, res, next) {
 			}
 			doc['diameter'] = diameter;
 
-			console.log(doc);
+			// console.log(doc);
 			results.push(calculateSessionParameters(doc));
 		});
 	  	
-	  	res.send(results);
+	  	var totalDistance = 0; //TODO: read from whole database //in km
+	  	for(var i=0; i<results.length; i++) {
+	  		if(results[i]['km']) {
+	  			totalDistance += results[i]['km'];	
+	  		}
+	  	}
+	  	history = {
+	  		"totalKm": round(totalDistance),
+	  		"sessions": results
+	  	}
+	  	res.send(history);
 
 	});
 
@@ -318,6 +329,8 @@ router.post('/like', function(req, res, next) {
 		  		console.log("No active session in progress.");
 		  	}
 		}
+	} else { //no device specified > TODO: award like to whichever device is currently active
+
 	}
 	io.emit('like', devices);
 	res.send('ok');
