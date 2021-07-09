@@ -2,8 +2,12 @@ history: 2
 # list of devices
 ratwheel:
  deviceId: 'ratwheel'
- diameter: 2
+ diameter: 2.1
 
 armwheel:
  deviceId: 'armwheel'
+ diameter: 0.65
+
+testwheel:
+ deviceId: 'testwheel'
  diameter: 1
