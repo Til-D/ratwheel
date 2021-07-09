@@ -186,10 +186,10 @@ router.get('/history', function(req, res, next) {
 	var history = req.app.get('history');
 	var couch = req.app.get('couch');
 
-	// var limit = wheelConfig['history']; //max
-	// if(req.query.limit && req.query.limit <= limit) {
-	// 	limit = req.query.limit;
-	// }
+	var limit = wheelConfig['history']; //max
+	if(req.query.limit && req.query.limit <= limit) {
+		limit = req.query.limit;
+	}
 
 	var params   = {include_docs: true};
 	couch.list(params).then((body) => {
@@ -216,7 +216,11 @@ router.get('/history', function(req, res, next) {
 		});
 	  	
 	  	history['totalKm'] = round(totalDistance);
-	  	res.send(history);
+	  	var result = {
+	  		'totalKm': history['totalKm'],
+	  		'sessions': history['sessions'].slice(0, limit) 
+	  	}
+	  	res.send(result);
 
 	});
 
