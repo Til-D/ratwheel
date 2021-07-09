@@ -66,8 +66,8 @@ historyRequest.onreadystatechange = function() {
 	if(this.readyState === 4 && this.status === 200) {
 		var result = JSON.parse(this.responseText);
 		console.log(result);
-		for(var i=0; i<=result.length; i++) {
-			var record = result[i];
+		for(var i=0; i<=result['sessions'].length; i++) {
+			var record = result['sessions'][i];
 			if(record) {
 				var li = document.createElement("li");
 				var txt = record.deviceId + " (session: " + record.sessionId + "): " + record.totalMinutes + " minutes, " + record.km + " kilometers, " + "average speed: " + record.avgKmh + "km/h, top speed: " + record.topSpeed + "km/h";
