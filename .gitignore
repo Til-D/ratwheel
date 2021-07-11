@@ -112,3 +112,4 @@ assets
 flightplan.js
 
 *.pyc
+server/sslcert
