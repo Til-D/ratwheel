@@ -11,9 +11,9 @@ var http = require('http');
 var https = require('https');
 
 // SSL certificate
-var privateKey  = fs.readFileSync('sslcert/server.key', 'utf8');
-var certificate = fs.readFileSync('sslcert/server.crt', 'utf8');
-var credentials = {key: privateKey, cert: certificate};
+// var privateKey  = fs.readFileSync('sslcert/server.key', 'utf8');
+// var certificate = fs.readFileSync('sslcert/server.crt', 'utf8');
+// var credentials = {key: privateKey, cert: certificate};
 
 /**
  * Get port from environment and store in Express.
@@ -26,10 +26,10 @@ app.set('port', port);
  * Create HTTP server.
  */
 
-// var server = http.createServer(app);
+var server = http.createServer(app);
 
-// TODO: switch to httpsServer
-var server = https.createServer(credentials, app);
+// switch to httpsServer > do this on nginx server instead
+// var server = https.createServer(credentials, app);
 
 // var io = require('socket.io')(server);
 
