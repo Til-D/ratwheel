@@ -93,6 +93,8 @@ app.set('history', {
   "sessions": []
 });
 
+app.set('mouseId', 0); // human-readable, incrementing participant id
+
 module.exports = app;
 
 // server.listen(3000, "127.0.0.1") //port

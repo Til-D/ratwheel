@@ -85,7 +85,8 @@ function calculateSessionParameters(session) {
 		"km": distance,
 		"avgKmh": round(avgKmh),
 		"topSpeed": round(topSpeed),
-		"likes": likes
+		"likes": likes,
+		"mouseId": session.mouseId
 	}
 	return result;
 }
@@ -386,6 +387,7 @@ router.post('/rpm', function(req, res, next) {
 
 	var couch = req.app.get('couch');
 	var wheelConfig = req.app.get('wheelConfig');
+	var mouseId = req.app.get('mouseId');
 	var io = req.app.get('socketio');
 	var devices = req.app.get('devices');
 	var history = req.app.get('history');
@@ -406,8 +408,10 @@ router.post('/rpm', function(req, res, next) {
   			"rpm": [req.body.rpm],
   			"rotations": req.body.rotations,
   			"tsStart": req.body.ts,
-  			"likes": 0
+  			"likes": 0,
+  			"mouseId": mouseId
   		};
+  		req.app.set('mouseId', ++mouseId);
   		couch.insert(session)
   		.then((body) => {
   			if(body.ok) {
