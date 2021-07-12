@@ -81,46 +81,46 @@ def sensorCallback(channel):
     # Magnet
     print("Sensor LOW " + stamp)
     
-    # calculate rpm
-    diff = timestamp - ts_last #ms
-    
-    if(ts_last > 0 and diff > 0):
-        
-      timeout = TIMEOUT * 1000 #ms
-      if(diff < timeout):
-
-        if(timer is not None):
-            timer.reset()
-        else:
-            if(timer):
-              timer.start()
-            else:
-              timer = TimerReset(TIMEOUT, trigger_timeout)
-              timer.start()
-              
-        timedout = False
-    
-        diff = diff/(60*1000) #min
-        rpm = round(1/diff, 2)
- 
-        rotations += 1
-        rpms.append(rpm)
+  # calculate rpm
+  diff = timestamp - ts_last #ms
+  
+  if(ts_last > 0 and diff > 0):
       
-        if(rotations == GRANULARITY):
-          
-          avg_rpm = round(reduce(lambda a, b: a+b, rpms) / len(rpms), 2)
+    timeout = TIMEOUT * 1000 #ms
+    if(diff < timeout):
+
+      if(timer is not None):
+          timer.reset()
+      else:
+          if(timer):
+            timer.start()
+          else:
+            timer = TimerReset(TIMEOUT, trigger_timeout)
+            timer.start()
+            
+      timedout = False
+  
+      diff = diff/(60*1000) #min
+      rpm = round(1/diff, 2)
+
+      rotations += 1
+      rpms.append(rpm)
+    
+      if(rotations == GRANULARITY):
         
-          print("rpm: " + str(avg_rpm) + ", rotations: " + str(rotations)) 
-          
-          # send rpm to server and rempty rotations
-          num_rotations = rotations # save value before emptying
-          rotations = 0
-          rpms = []
-          session_id = post_rotations(SERVER_URL, DEVICE_ID, avg_rpm, session_id, num_rotations, timestamp)
-          print('+ session id: ' + session_id)
-          
-      else: #timeout
-          pass
+        avg_rpm = round(reduce(lambda a, b: a+b, rpms) / len(rpms), 2)
+      
+        print("rpm: " + str(avg_rpm) + ", rotations: " + str(rotations)) 
+        
+        # send rpm to server and rempty rotations
+        num_rotations = rotations # save value before emptying
+        rotations = 0
+        rpms = []
+        session_id = post_rotations(SERVER_URL, DEVICE_ID, avg_rpm, session_id, num_rotations, timestamp)
+        print('+ session id: ' + session_id)
+        
+    else: #timeout
+        pass
           
     pole_last = pole
     ts_last = timestamp
