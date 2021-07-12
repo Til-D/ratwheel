@@ -216,9 +216,10 @@ router.get('/history', function(req, res, next) {
 		});
 	  	
 	  	history['totalKm'] = round(totalDistance);
+	  	limit = limit * (-1);
 	  	var result = {
 	  		'totalKm': history['totalKm'],
-	  		'sessions': history['sessions'].slice(0, limit) 
+	  		'sessions': history['sessions'].slice(limit) 
 	  	}
 	  	res.send(result);
 
@@ -305,7 +306,7 @@ router.get('/', function(req, res, next) {
 router.post('/ping', function(req, res, next) {
 	
 	// curl -X POST http://localhost:3000/api/ping -d '{"deviceId": "armwheel"}' -H 'Content-Type: application/json'
-	// curl -X POST http://45.113.235.98/api/ping -d '{"deviceId": "ratwheel"}' -H 'Content-Type: application/json'
+	// curl -X POST https://45.113.235.98/api/ping -d '{"deviceId": "ratwheel"}' -H 'Content-Type: application/json'
 
 	var devices = req.app.get('devices');
 	var io = req.app.get('socketio');
