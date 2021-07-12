@@ -15,12 +15,13 @@ Components:
 
 Make sure to set the following environment variables:
     
+    export SERVER_PROD=http://ratwheelserver.com
     export DEVICE_ID=ratwheel
     export SESSION_TIMEOUT=10.0
     export SUBMISSION_FREQUENCY=1
     export MAGNET_ANGLE=180
 
-``DEVICE_ID`` identifies the device, ``SESSION_TIMEOUT`` sets the time interval (in seconds) for a new session to start (i.e., if the wheel does not turn for the specified time, the device creates a new session for a new user), and ``SUBMISSION_FREQUENCY`` determines the frequency in which the current rpm are sent to the server. ``MAGNET_ANGLE`` describes how far the magnets are apart to be able to discount rpm.
+``SERVER_PROD`` indicates the IP address or domain of the data server.``DEVICE_ID`` identifies the device, ``SESSION_TIMEOUT`` sets the time interval (in seconds) for a new session to start (i.e., if the wheel does not turn for the specified time, the device creates a new session for a new user), and ``SUBMISSION_FREQUENCY`` determines the frequency in which the current rpm are sent to the server. ``MAGNET_ANGLE`` describes how far the magnets are apart to be able to discount rpm.
 
 ### Start Odometer on Startup
 To execute the python script on startup make sure to install a cronjob using

@@ -13,7 +13,7 @@ import requests
 import os
 import json
 
-SERVER_PROD = 'http://45.113.235.98'
+SERVER_PROD = os.environ['SERVER_PROD']
 SERVER_TEST = 'http://localhost:3000'
 
 
