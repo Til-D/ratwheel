@@ -50,6 +50,7 @@ GRANULARITY = int(os.environ['SUBMISSION_FREQUENCY']) #determines how many rotat
 SERVER_URL = SERVER_PROD
 DEVICE_ID = os.environ['DEVICE_ID']
 TIMEOUT = float(os.environ['SESSION_TIMEOUT']) #sec
+MAGNET_ANGLE = float(os.environ['MAGNET_ANGLE'])
 
 ts_last = 0
 pole_last = 1 #HIGH
@@ -101,7 +102,10 @@ def sensorCallback(channel):
       timedout = False
   
       diff = diff/(60*1000) #min
-      rpm = round(1/diff, 2)
+      
+      rotation_quotient = 360.0/MAGNET_ANGLE
+      print('rotation_quotient: ' + str(rotation_quotient))
+      rpm = round(1/diff/rotation_quotient, 2)
 
       rotations += 1
       rpms.append(rpm)
@@ -120,10 +124,11 @@ def sensorCallback(channel):
         print('+ session id: ' + session_id)
         
     else: #timeout
+        print('nothing to do')
         pass
           
-    pole_last = pole
-    ts_last = timestamp
+  pole_last = pole
+  ts_last = timestamp
   
 def main():
   # Wrap main content in a try block so we can
