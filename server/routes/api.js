@@ -31,11 +31,10 @@ function calculateSessionParameters(session) {
 	} else {
 		status = 'inactive';
 	}
-
 	// average rpms
 	var tmpTotal = 0;
 	for(var i=0; i<session.rpm.length; i++) {
-		tmpTotal += session.rpm[i];
+		tmpTotal += parseInt(session.rpm[i]);
 	}
 	avgRpm = tmpTotal / session.rpm.length;
 
@@ -86,7 +85,8 @@ function calculateSessionParameters(session) {
 		"avgKmh": round(avgKmh),
 		"topSpeed": round(topSpeed),
 		"likes": likes,
-		"mouseId": session.mouseId
+		"mouseId": session.mouseId,
+		"cheerCondition": session.cheerCondition
 	}
 	return result;
 }
@@ -469,8 +469,8 @@ router.post('/rpm', function(req, res, next) {
   		// retrieve session from db
   		couch.get(req.body.sessionId)
   		.then((body) => {
-  			console.log("Updating existing session:");
-  			console.log(body);
+  			// console.log("Updating existing session:");
+  			// console.log(body);
 
   			// update values
   			body.rpm.push(req.body.rpm);
@@ -511,6 +511,8 @@ router.post('/rpm', function(req, res, next) {
 
 	  				devices[session.deviceId]['session'] = session;
 	  				io.emit('update', session);
+	  				// console.log("+ session updated:");
+	  				console.log(session);
 	  				res.send(session);
 	  			} else {
 	  				console.log("ERROR inserting new session:")

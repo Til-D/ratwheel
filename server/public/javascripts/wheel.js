@@ -59,7 +59,7 @@ function onchange() {
 		"deviceId": $deviceSelection.value,
 		 "rpm": rpm,
 		 "sessionId": sessionId,
-		 "rotations": 0, 
+		 "rotations": 0, //TODO: calculate rotations based on timestamps
 		 "ts": Date.now()
 	}
 	request.open("POST", "/api/rpm");
