@@ -3,9 +3,7 @@ extends layout
 block content
   h1= title
   p 
-    | The wheel speed is currently connected to the 
-    a(href="/api/simulator") simulator
-    | , but you can manually adjust its speed and see the results in the 
+    | Welcome to the wheel simulator! You can hop on, adjust, and hop off the virtual wheel. See the results in the 
     a(href="/api/live" target="_blank") live feed
     | . Fun!
 
@@ -14,8 +12,10 @@ block content
     option(value="ratwheel") Ratwheel
     option(value="armwheel") Armwheel
   
-  input(type="number" id="rpm" value="10") 
+  input(type="number" id="rpm" value="0" disabled) 
   span rpm
+  span(class="space")
+  button(id="controlButton" class="green") Start Session
 
   h2 Rat History
   p

@@ -46,3 +46,21 @@ td {
   vertical-align: center;
   min-width: 100px;
 }
+
+.space {
+  margin-right: 30px;
+}
+
+button {
+  padding: 5px 10px 5px 10px;
+  border: 0;
+  cursor: pointer;
+}
+
+.green {
+  background-color: #8bce8b;
+}
+
+.red {
+  background-color: #c79090;
+}

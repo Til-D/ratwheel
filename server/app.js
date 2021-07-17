@@ -95,6 +95,8 @@ app.set('history', {
 
 app.set('mouseId', 0); // human-readable, incrementing participant id
 
+app.set('cheerConditions', ['none', 'low', 'viral']);
+
 module.exports = app;
 
 // server.listen(3000, "127.0.0.1") //port
