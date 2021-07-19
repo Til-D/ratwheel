@@ -454,6 +454,8 @@ router.post('/rpm', function(req, res, next) {
   				history['sessions'].shift(); //remove first 
   			}
 
+  			//TODO: start cheerCondition
+
   			devices[session.deviceId]['session'] = session;
   			io.emit('update', session);
   			res.send(session);
