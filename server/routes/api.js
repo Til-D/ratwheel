@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 var moment = require('moment');
+var axios = require('axios');
+var os = require('os');
 
 var DATE_FORMAT = ("MMMM Do HH:mm");
 
@@ -85,10 +87,69 @@ function calculateSessionParameters(session) {
 		"avgKmh": round(avgKmh),
 		"topSpeed": round(topSpeed),
 		"likes": likes,
+		"likedBy": session.likedBy,
 		"mouseId": session.mouseId,
 		"cheerCondition": session.cheerCondition
 	}
 	return result;
+}
+
+function getRandomInt(min, max) {
+	return Math.max(Math.floor(Math.random() * max), min);
+}
+
+function cheerTimerTriggered(session, app, host, cheerbotConfig) {
+	console.log("- cheerTimerTriggered(): " + session['deviceId'] + ' (' + session['cheerCondition'] + ')');
+
+	//set cheer burst
+	var cheerCount;
+	switch(session['cheerCondition']) {
+		case "low":
+			cheerCount = getRandomInt(cheerbotConfig.conditions.low.minCheers, cheerbotConfig.conditions.low.maxCheers);
+			break;
+		case "viral":
+			cheerCount = getRandomInt(cheerbotConfig.conditions.viral.minCheers, cheerbotConfig.conditions.viral.maxCheers);
+			break;
+		default:
+			cheerCount = 0;
+	}
+
+	console.log('scheduling ' + cheerCount + ' cheers');
+	while(cheerCount>0) {
+
+		var url = 'http://' + host + '/api/like';
+		var triggerTime = getRandomInt(0, cheerbotConfig.burstInterval*1000);
+		setTimeout(sendCheer, triggerTime, url, session);
+		cheerCount--;
+	}	
+
+	// set new cheer interval
+	// [ERROR]: Maximum call stack size exceeded
+	// var cheerTimer = app.get('devices')[session.deviceId].timer;
+	// if(cheerTimer) { //already active cheerTimer
+	// 	clearInterval(cheerTimer);
+	// }
+	// var startDelay = (cheerbotConfig.burstInterval + getRandomInt(cheerbotConfig.minDelay, cheerbotConfig.maxDelay)) * 1000; //ms
+	// console.log('+ setting new cheerTimer: ' + startDelay + ' (' + session.cheerCondition + ')');
+	// app.get('devices')[session.deviceId]['timer'] = setTimeout(cheerTimerTriggered, startDelay, session, app, host, cheerbotConfig);
+}
+
+function sendCheer(url, session) {
+
+	// console.log("GOT CHEERS");
+	axios
+	  .post(url, {
+	    deviceId: session['deviceId'],
+	    likedBy: 'bot'
+	  })
+	  .then(res => {
+	    // console.log(`statusCode: ${res.status}`)
+	    // console.log(res)
+	  })
+	  .catch(error => {
+	    console.error("[ERROR]: could not connect to: " + url);
+	    console.log(error);
+	  })
 }
 
 /**
@@ -346,41 +407,38 @@ router.post('/like', function(req, res, next) {
 		if(devices[req.body.deviceId]) {
 			var device = devices[req.body.deviceId];
 
-			if(device.session) {
+			if(device.session && device.session.status==='active') {
 				device.session.likes += 1
-			
-				//update session in db
-				// retrieve session from db
-		  		couch.get(device.session.sessionId)
-		  		.then((body) => {
-		  			console.log("Updating likes in session:");
-		  			console.log(body);
 
-		  			// update values
-		  			body.likes = device.session.likes;
-		  			couch.insert(body).then((resp) => {
-			  			if(resp.ok) {
-			  				console.log("Session updated: " + resp.id);
-			  			} else {
-			  				console.log("ERROR updating session:")
-			  				console.log(resp);
-			  			}
-			  		});
-		  		})
-		  		.catch((err) => {
-		  			console.log("Could not find session: " + req.body.sessionId);
-		  			// console.log(err);
-		  			res.send(404);
-		  		});
+				var likedBy;
+				if(req.body.likedBy) {
+					likedBy = req.body.likedBy;
+				} else {
+					likedBy = 'unknown';
+				}
+
+				if(device.session.likedBy) {
+					device.session.likedBy[req.body.likedBy] += 1;
+				} else {
+					device.session.likedBy = {};
+					device.session.likedBy[req.body.likedBy] = 1;
+				}
+
+				// console.log('session in cache updated:');
+				// console.log(device.session);
+
+				io.emit('like', devices);
+				res.send('ok');
+
 		  	} else {
 		  		console.log("No active session in progress.");
+		  		res.send('error: no active session.');
 		  	}
 		}
 	} else { //no device specified > TODO: award like to whichever device is currently active
-
+		res.send('error: no device specified.');
 	}
-	io.emit('like', devices);
-	res.send('ok');
+
 });
 
 /* POST ROTATION */
@@ -392,7 +450,7 @@ router.post('/rpm', function(req, res, next) {
 	var couch = req.app.get('couch');
 	var wheelConfig = req.app.get('wheelConfig');
 	var mouseId = req.app.get('mouseId');
-	var cheerConditions = req.app.get('cheerConditions');
+	var cheerConditions = wheelConfig.cheerbot.conditions.probabilities;
 	var io = req.app.get('socketio');
 	var devices = req.app.get('devices');
 	var history = req.app.get('history');
@@ -409,7 +467,12 @@ router.post('/rpm', function(req, res, next) {
 	// CREATE NEW SESSION
   	if(!req.body.sessionId || req.body.sessionId == 'new') {
 
-  		var cheerCondition = cheerConditions[Math.floor(Math.random()*cheerConditions.length)];
+  		var cheerCondition;
+  		if(wheelConfig.cheerbot.enabled){
+  			cheerCondition = cheerConditions[Math.floor(Math.random()*cheerConditions.length)];
+  		} else {
+  			cheerCondition = 'disabled';
+  		}
 
   		var session = {
   			"deviceId": req.body.deviceId,
@@ -422,8 +485,8 @@ router.post('/rpm', function(req, res, next) {
   		};
   		req.app.set('mouseId', ++mouseId);
 
-  		console.log('+ create new session');
-  		console.log(session);
+  		// console.log('+ create new session');
+  		// console.log(session);
 
   		couch.insert(session)
   		.then((body) => {
@@ -454,8 +517,19 @@ router.post('/rpm', function(req, res, next) {
   				history['sessions'].shift(); //remove first 
   			}
 
-  			//TODO: start cheerCondition
-
+  			// a cheerTimer consists of a startDelay, a scheduleDelay, and a density
+  			var cheerTimer = devices[session.deviceId].timer;
+  			if(session.cheerCondition != 'none' && wheelConfig.cheerbot.enabled) {
+	  			if(cheerTimer) { //already active cheerTimer
+	  				clearInterval(cheerTimer);
+	  			}
+  				var startDelay = getRandomInt(wheelConfig.cheerbot.minDelay, wheelConfig.cheerbot.maxDelay) * 1000; //ms
+  				console.log('+ setting cheerTimer: ' + startDelay + ' (' + session.cheerCondition + ')');
+				devices[session.deviceId]['timer'] = setTimeout(cheerTimerTriggered, startDelay, session, req.app, req.get('host'), wheelConfig.cheerbot);
+	  			// console.log(cheerTimer);
+				// req.app.set('cheerTimer', cheerTimer);
+  			}
+  			
   			devices[session.deviceId]['session'] = session;
   			io.emit('update', session);
   			res.send(session);
@@ -469,6 +543,7 @@ router.post('/rpm', function(req, res, next) {
   	} else {
 
   		// retrieve session from db
+  		console.log('retrieving session: ' + req.body.sessionId);
   		couch.get(req.body.sessionId)
   		.then((body) => {
   			// console.log("Updating existing session:");
@@ -478,6 +553,11 @@ router.post('/rpm', function(req, res, next) {
   			body.rpm.push(req.body.rpm);
   			body.rotations += req.body.rotations;
   			body.tsLast = req.body.ts;
+
+  			// update likes
+  			body['likes'] = devices[body.deviceId].session.likes;
+  			body['likedBy'] = devices[body.deviceId].session.likedBy;
+
   			couch.insert(body).then((resp) => {
 	  			if(resp.ok) {
 	  				console.log("Session updated: " + resp.id);
@@ -514,8 +594,61 @@ router.post('/rpm', function(req, res, next) {
 	  				devices[session.deviceId]['session'] = session;
 	  				io.emit('update', session);
 	  				// console.log("+ session updated:");
+
+	  				//cancel timer when all sessions become inactive
+	  				var keys = Object.keys(devices); 
+	  					oneActiveSession = false;
+	  				for(var i=0; i<keys.length; i++) {
+
+		  				if(devices[keys[i]].session && devices[keys[i]].session.status==='active') {
+							oneActiveSession = true;
+							break;
+		  				}
+	  				}
+	  				if(!oneActiveSession) {
+	  					if(devices[session.deviceId].timer) {
+	  						console.log('- cheerTimer cancelled');
+	  						clearTimeout(devices[session.deviceId].timer);
+	  					} else {
+	  						console.log('no timer active.');
+	  					}
+	  				} else {
+	  					// console.log('no active session');
+	  				}
+
+	  				//add likes when session becomes inactive
+	  				// if(session.status==='inactive') {
+				  	// 	couch.get(session.sessionId)
+				  	// 	.then((body) => {
+				  	// 		console.log("Updating likes in session: " + session.sessionId + " (" + session.likes + " likes)");
+				  	// 		// console.log(body);
+				  	// 		console.log(session);
+
+				  	// 		// update values
+				  	// 		body['likes'] = session.likes;
+				  	// 		body['likedBy'] = session.likedBy;
+				  	// 		couch.insert(body).then((resp) => {
+					  // 			if(resp.ok) {
+					  // 				console.log("Session updated: " + resp.id);
+					  // 			} else {
+					  // 				console.log("ERROR updating session:")
+					  // 				console.log(resp);
+					  // 			}
+					  // 		})
+					  // 		.catch((err) => {
+					  // 			// console.log("Could not add like to session: " + req.body.sessionId);
+					  // 			// console.log(err);
+					  // 		});
+				  	// 	})
+				  	// 	.catch((err) => {
+				  	// 		console.log("Could not find session: " + req.body.sessionId);
+				  	// 		// console.log(err);
+				  	// 	});
+				  	// }
+
 	  				console.log(session);
 	  				res.send(session);
+
 	  			} else {
 	  				console.log("ERROR inserting new session:")
 	  				console.log(resp);

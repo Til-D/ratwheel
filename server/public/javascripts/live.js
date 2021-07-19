@@ -37,17 +37,23 @@ socket.on('update', function(data) {
 	if(data.status=='active') {
 		var duration = 60 / data.rpm;
 		document.getElementById(data.deviceId).style.animationDuration = duration + 's';
+
+		if(data.deviceId=='ratwheel') {
+			$ratwheel_speed.textContent = data.rpm;
+			$ratwheel_likes.textContent = data.likes;
+		}
+		if(data.deviceId=='armwheel') {
+			$armwheel_speed.textContent = data.rpm;
+			$armwheel_likes.textContent = data.likes;
+		}
 	} else {
 		document.getElementById(data.deviceId).style.animationDuration = 0 + 's';
+		$ratwheel_speed.textContent = '0';
+		$ratwheel_likes.textContent = '0';
+		$armwheel_speed.textContent = '0';
+		$armwheel_likes.textContent = '0';
 	}
-	if(data.deviceId=='ratwheel') {
-		$ratwheel_speed.textContent = data.rpm;
-		$ratwheel_likes.textContent = data.likes;
-	}
-	if(data.deviceId=='armwheel') {
-		$armwheel_speed.textContent = data.rpm;
-		$armwheel_likes.textContent = data.likes;
-	}
+	
 
     var item = document.createElement('li');
     item.textContent = data.deviceId + ': ' + data.rpm + ' rpm (session: ' + data.sessionId + '), status: ' + data.status;

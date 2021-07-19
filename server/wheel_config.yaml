@@ -11,3 +11,18 @@ armwheel:
 testwheel:
  deviceId: 'testwheel'
  diameter: 1
+
+# cheer bot experiment
+cheerbot:
+ enabled: true
+ minDelay: 5
+ maxDelay: 10
+ burstInterval: 5
+ conditions:
+  probabilities: ['none', 'low', 'viral']
+  low:
+   minCheers: 2
+   maxCheers: 5
+  viral:
+   minCheers: 10
+   maxCheers: 30 
