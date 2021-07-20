@@ -1,7 +1,7 @@
 # Ratwheel Odometer
 Odometer for the Science Gallery exhibit with server api.
 
-The project consists of the odometer running on a [RPi](Raspberry Pi) and the corresponding [server](Node Server). The server connnects to CouchDB using [https://www.npmjs.com/package/nano](nano).
+The project consists of the odometer running on a [Raspberry Pi](/RPi) and the corresponding [Node Server](/server). The server connnects to CouchDB using [nano](https://www.npmjs.com/package/nano).
 
 Additionally, a cheer bot can be activated to cheer runners on.
 
