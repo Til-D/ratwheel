@@ -53,7 +53,6 @@ The server receives updates from wheels via the [API](server/routes/api.js). The
 - POST
     - ``/api/rpm``: receives odometer updates. Parameters include ``deviceId``, ``rpm`` (rotations per minute), ``sessionId``, ``rotations``, and a timestamp (``ts``). If no ``sesionId`` is specified or ``sessionId`` is set to *new*, the server creates a new session and returns the ``sessionId`` from the corresponding database entry. The ``rotations`` should specify the rotations the wheel made since the last update. The server will add rotations and process the session, returning a session object with the following parameters:
 
-
         { 
             deviceId: 'armwheel',
             sessionId: '51050eaa7eeb5bcac3519db8130a29bc',
@@ -73,7 +72,6 @@ The server receives updates from wheels via the [API](server/routes/api.js). The
             mouseId: 1,
             cheerCondition: 'viral' 
         }
-
 
     - The ``mouseId`` is a human-readable, incrementing identifier, which is reset with each server relaunch. 
         - example call: ``curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "ratwheel", "rpm": 5, "sessionId": "new", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'``
