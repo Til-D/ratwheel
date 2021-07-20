@@ -72,6 +72,7 @@ function calculateSessionParameters(session) {
 		"tsStart": session.tsStart,
 		"tsEnd": session.tsLast,
 		"rpm": rpm, //current rpm
+		"rpmTs": session.rpmTs,
 		"kmh": kmh,
 		"avgRpm": round(avgRpm),
 		"totalMinutes": round(duration),
@@ -80,6 +81,7 @@ function calculateSessionParameters(session) {
 		"topSpeed": round(topSpeed),
 		"likes": session.likes,
 		"likedBy": session.likedBy,
+		"likesTs": session.likesTs,
 		"mouseId": session.mouseId,
 		"cheerCondition": session.cheerCondition
 	}
@@ -408,6 +410,7 @@ router.post('/like', function(req, res, next) {
 	// curl -X POST http://45.113.235.98/api/like -d '{"deviceId": "ratwheel"}' -H 'Content-Type: application/json'
 
 	var devices = req.app.get('devices');
+	var ts = new Date().getTime();
 	var couch = req.app.get('couch');
 	var io = req.app.get('socketio');
 
@@ -432,6 +435,7 @@ router.post('/like', function(req, res, next) {
 					device.session.likedBy[likedBy] = 0;
 				}
 				device.session.likedBy[likedBy] += 1;
+				device.session.likesTs.push(ts);
 
 				// console.log('session in cache updated:');
 				// console.log(device.session);
@@ -465,6 +469,7 @@ router.post('/like', function(req, res, next) {
 			if(device.session && device.session.status==='active') {
 				console.log('- adding like to: ' + deviceIds[i]);
 				device.session.likes += 1;
+				device.session.likesTs.push(ts);
 
 				if(!device.session.likedBy.hasOwnProperty(likedBy)) {
 					device.session.likedBy[likedBy] = 0;
@@ -514,9 +519,11 @@ router.post('/rpm', function(req, res, next) {
   		var session = {
   			"deviceId": req.body.deviceId,
   			"rpm": [req.body.rpm],
+  			"rpmTs": [req.body.ts],
   			"rotations": req.body.rotations,
   			"tsStart": req.body.ts,
   			"likes": 0,
+  			"likesTs": [],
   			"likedBy": {},
   			"mouseId": mouseId,
   			"cheerCondition": cheerCondition
@@ -590,11 +597,13 @@ router.post('/rpm', function(req, res, next) {
 
   			// update values
   			body.rpm.push(req.body.rpm);
+  			body.rpmTs.push(req.body.ts);
   			body.rotations += req.body.rotations;
   			body.tsLast = req.body.ts;
 
   			// update likes
   			body['likes'] = devices[body.deviceId].session.likes;
+  			body['likesTs'] = devices[body.deviceId].session.likesTs;
   			body['likedBy'] = devices[body.deviceId].session.likedBy;
 
   			couch.insert(body).then((resp) => {

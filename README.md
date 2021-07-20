@@ -15,7 +15,6 @@ Components:
 - Resistor 10k ohm
 
 ### Install Odometer Script
-...
 
 Make sure to set the following environment variables:
     
@@ -26,6 +25,10 @@ Make sure to set the following environment variables:
     export MAGNET_ANGLE=180
 
 ``SERVER_PROD`` indicates the IP address or domain of the data server.``DEVICE_ID`` identifies the device, ``SESSION_TIMEOUT`` sets the time interval (in seconds) for a new session to start (i.e., if the wheel does not turn for the specified time, the device creates a new session for a new user), and ``SUBMISSION_FREQUENCY`` determines the frequency in which the current rpm are sent to the server. ``MAGNET_ANGLE`` describes how far the magnets are apart to be able to discount rpm.
+
+Also, make sure to set the timezone of the device, e.g.:
+
+    sudo timedatectl set-timezone Australia/Melbourne
 
 ### Start Odometer on Startup
 To execute the python script on startup make sure to install a cronjob using
