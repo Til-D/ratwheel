@@ -44,14 +44,15 @@ Install packages using ``npm install``. Start via ``npm start``.
 
 ## API
 
-The server receives updates from wheels via the [server/routes/api.js](api). The following routes are available:
+The server receives updates from wheels via the [API](server/routes/api.js). The following routes are available:
 
 - GET
-    - ``/api/live``: live dashboard showing wheel activity. Examples for how to process server responses can be found in [server/public/javascripts/live.js](live.js).
+    - ``/api/live``: live dashboard showing wheel activity. Examples for how to process server responses can be found in [live.js](server/public/javascripts/live.js).
     - ``/api/history?limit=N``: loads the last ``N`` sessions from the server's cache. The most current sessions are listed last.
     - ``/api/simulator``: *deprecated*. Used to generate fake wheel activity.
 - POST
     - ``/api/rpm``: receives odometer updates. Parameters include ``deviceId``, ``rpm`` (rotations per minute), ``sessionId``, ``rotations``, and a timestamp (``ts``). If no ``sesionId`` is specified or ``sessionId`` is set to *new*, the server creates a new session and returns the ``sessionId`` from the corresponding database entry. The ``rotations`` should specify the rotations the wheel made since the last update. The server will add rotations and process the session, returning a session object with the following parameters:
+
 
     { 
         deviceId: 'armwheel',
@@ -71,20 +72,21 @@ The server receives updates from wheels via the [server/routes/api.js](api). The
         likedBy: { bot: 2 },
         mouseId: 1,
         cheerCondition: 'viral' 
-  }
+    }
 
-        - The ``mouseId`` is a human-readable, incrementing identifier, which is reset with each server relaunch. 
+
+    - The ``mouseId`` is a human-readable, incrementing identifier, which is reset with each server relaunch. 
         - example call: ``curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "ratwheel", "rpm": 5, "sessionId": "new", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'``
     - ``/api/like``: likes are collected device-specific or general. If no ``deviceId`` is specified, the like will be added to all active sessions. Optionally, likes can be signed according to where they come from (e.g., a bot or human agent).
         - example call (generic): ``curl -X POST http://localhost:3000/api/like -d '{}' -H 'Content-Type: application/json'``
         - example call (device-specific): ``curl -X POST http://localhost:3000/api/like -d '{"deviceId": "armwheel"}' -H 'Content-Type: application/json'``
-        - example call (including source): curl -X POST http://localhost:3000/api/like -d '{"deviceId": "armwheel", "likedBy": "human"}' -H 'Content-Type: application/json'
+        - example call (including source): ``curl -X POST http://localhost:3000/api/like -d '{"deviceId": "armwheel", "likedBy": "human"}' -H 'Content-Type: application/json'``
     - ``/api/ping``: odometers ping the server regardless of wheel activity. Status can be monitoried via ``/api/live``. 
         - example call: ``curl -X POST http://localhost:3000/api/ping -d '{"deviceId": "armwheel"}' -H 'Content-Type: application/json'``
 
 ## WheelConfig
 
-Wheel and server variables are configured in [server/wheel_config.yaml](wheel_config.yaml). For each device, ``diameter`` and ``deviceId`` can be set. Additionally, the server provides a cheer bot, designed to like up active sessions. When a new session is created, the server randomly picks a condition from ``cheerbot.conditions``. A timer is started with a random interval between ``minDelay`` and ``maxDelay``. Once the timer is triggered and if the session is still active, a burst of *likes* are scheduled in the time interval specified as ``burstInterval``. How many cheers are scheduled depends on the condition and the values specified as ``minCheers`` and ``maxCheers``.
+Wheel and server variables are configured in [wheel_config.yaml](server/wheel_config.yaml). For each device, ``diameter`` and ``deviceId`` can be set. Additionally, the server provides a cheer bot, designed to like up active sessions. When a new session is created, the server randomly picks a condition from ``cheerbot.conditions``. A timer is started with a random interval between ``minDelay`` and ``maxDelay``. Once the timer is triggered and if the session is still active, a burst of *likes* are scheduled in the time interval specified as ``burstInterval``. How many cheers are scheduled depends on the condition and the values specified as ``minCheers`` and ``maxCheers``.
 
 ## Author
 - [Tilman Dingler](https://github.com/Til-D/)
