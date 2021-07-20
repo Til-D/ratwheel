@@ -89,8 +89,8 @@ Wheel and server variables are configured in [wheel_config.yaml](server/wheel_co
 ## Author
 - [Tilman Dingler](https://github.com/Til-D/)
 
-## Articles about *Wheel*
-- [Running on Rainbows](https://pursuit.unimelb.edu.au/articles/running-on-rainbows)
+## Articles about the Installation
+- [Running on Rainbows](https://pursuit.unimelb.edu.au/articles/running-on-rainbows), in *Pursuit*, 19 July 2021
 
 ## License
 This application is published under the [MIT license](http://www.opensource.org/licenses/mit-license) and [GPL v3](http://opensource.org/licenses/GPL-3.0). 
