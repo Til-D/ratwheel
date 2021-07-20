@@ -53,25 +53,25 @@ The server receives updates from wheels via the [API](server/routes/api.js). The
 - POST
     - ``/api/rpm``: receives odometer updates. Parameters include ``deviceId``, ``rpm`` (rotations per minute), ``sessionId``, ``rotations``, and a timestamp (``ts``). If no ``sesionId`` is specified or ``sessionId`` is set to *new*, the server creates a new session and returns the ``sessionId`` from the corresponding database entry. The ``rotations`` should specify the rotations the wheel made since the last update. The server will add rotations and process the session, returning a session object with the following parameters:
 
-        { 
-            deviceId: 'armwheel',
-            sessionId: '51050eaa7eeb5bcac3519db8130a29bc',
-            status: 'inactive',
-            rotations: 0.014866666666666667,
-            tsStart: 1626769990064,
-            tsEnd: 1626769990572,
-            rpm: '0',
-            kmh: 0.21,
-            avgRpm: 1, 
-            totalMinutes: 0.04,
-            km: 0.00003035825700918937,
-            avgKmh: 0.22,
-            topSpeed: 0.25,
-            likes: 2,
-            likedBy: { bot: 2 },
-            mouseId: 1,
-            cheerCondition: 'viral' 
-        }
+    { 
+        deviceId: 'armwheel',
+        sessionId: '51050eaa7eeb5bcac3519db8130a29bc',
+        status: 'inactive',
+        rotations: 0.014866666666666667,
+        tsStart: 1626769990064,
+        tsEnd: 1626769990572,
+        rpm: '0',
+        kmh: 0.21,
+        avgRpm: 1, 
+        totalMinutes: 0.04,
+        km: 0.00003035825700918937,
+        avgKmh: 0.22,
+        topSpeed: 0.25,
+        likes: 2,
+        likedBy: { bot: 2 },
+        mouseId: 1,
+        cheerCondition: 'viral' 
+    }
 
     - The ``mouseId`` is a human-readable, incrementing identifier, which is reset with each server relaunch. 
         - example call: ``curl -X POST http://localhost:3000/api/rpm -d '{"deviceId": "ratwheel", "rpm": 5, "sessionId": "new", "rotations": 12, "ts": 62}' -H 'Content-Type: application/json'``
