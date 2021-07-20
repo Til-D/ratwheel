@@ -18,8 +18,7 @@ function calculateSessionParameters(session) {
 		distance,
 		kmh,
 		avgKmh,
-		topSpeed,
-		likes;
+		topSpeed;
 
 	// current rpm
 	if(session.rpm.length>0) {
@@ -65,13 +64,6 @@ function calculateSessionParameters(session) {
 	var distanceInMeter = (maxRpm * (2 * Math.PI * session.diameter/2));
 	topSpeed = distanceInMeter * 60/1000;
 
-	// init likes
-	if(session.likes) {
-		likes = session.likes;
-	} else {
-		likes = 0;
-	}
-
 	result = {
 		"deviceId": session.deviceId,
 		"sessionId": session._id,
@@ -86,7 +78,7 @@ function calculateSessionParameters(session) {
 		"km": distance,
 		"avgKmh": round(avgKmh),
 		"topSpeed": round(topSpeed),
-		"likes": likes,
+		"likes": session.likes,
 		"likedBy": session.likedBy,
 		"mouseId": session.mouseId,
 		"cheerCondition": session.cheerCondition
@@ -98,32 +90,50 @@ function getRandomInt(min, max) {
 	return Math.max(Math.floor(Math.random() * max), min);
 }
 
-function cheerTimerTriggered(session, app, host, cheerbotConfig) {
-	console.log("- cheerTimerTriggered(): " + session['deviceId'] + ' (' + session['cheerCondition'] + ')');
+function cheerTimerTriggered(deviceId, app, host, cheerbotConfig) {
 
-	//set cheer burst
-	var cheerCount;
-	switch(session['cheerCondition']) {
-		case "low":
-			cheerCount = getRandomInt(cheerbotConfig.conditions.low.minCheers, cheerbotConfig.conditions.low.maxCheers);
-			break;
-		case "viral":
-			cheerCount = getRandomInt(cheerbotConfig.conditions.viral.minCheers, cheerbotConfig.conditions.viral.maxCheers);
-			break;
-		default:
-			cheerCount = 0;
+	var session = app.get('devices')[deviceId].session;
+	var sessionStatus = session.status;
+
+	console.log("+ cheerTimerTriggered(): " + session['deviceId'] + ' (' + session['cheerCondition'] + ')');
+
+	// console.log('LULU');
+	// console.log(app.get('devices')[session.deviceId]);
+	// console.log('LALA');
+	// console.log(session);
+
+	if(sessionStatus==='active') {
+			//set cheer burst
+		var cheerCount;
+		switch(session['cheerCondition']) {
+			case "low":
+				cheerCount = getRandomInt(cheerbotConfig.conditions.low.minCheers, cheerbotConfig.conditions.low.maxCheers);
+				break;
+			case "viral":
+				cheerCount = getRandomInt(cheerbotConfig.conditions.viral.minCheers, cheerbotConfig.conditions.viral.maxCheers);
+				break;
+			default:
+				cheerCount = 0;
+		}
+
+		console.log('scheduling ' + cheerCount + ' cheers');
+		while(cheerCount>0) {
+
+			var url = 'http://' + host + '/api/like';
+			var triggerTime = getRandomInt(0, cheerbotConfig.burstInterval*1000);
+			setTimeout(sendCheer, triggerTime, url, session);
+			cheerCount--;
+		}
+
+		// set new cheer interval
+		var startDelay = (cheerbotConfig.burstInterval + getRandomInt(cheerbotConfig.minDelay, cheerbotConfig.maxDelay)) * 1000; //ms
+		console.log('+ setting new cheerTimer: ' + startDelay + ' (' + session.cheerCondition + ')');
+		setTimeout(cheerTimerTriggered, startDelay, session.deviceId, app, host, cheerbotConfig);
+
+	} else {
+		console.log('- skipped. Session inactive.');
 	}
 
-	console.log('scheduling ' + cheerCount + ' cheers');
-	while(cheerCount>0) {
-
-		var url = 'http://' + host + '/api/like';
-		var triggerTime = getRandomInt(0, cheerbotConfig.burstInterval*1000);
-		setTimeout(sendCheer, triggerTime, url, session);
-		cheerCount--;
-	}	
-
-	// set new cheer interval
 	// [ERROR]: Maximum call stack size exceeded
 	// var cheerTimer = app.get('devices')[session.deviceId].timer;
 	// if(cheerTimer) { //already active cheerTimer
@@ -148,7 +158,7 @@ function sendCheer(url, session) {
 	  })
 	  .catch(error => {
 	    console.error("[ERROR]: could not connect to: " + url);
-	    console.log(error);
+	    // console.log(error);
 	  })
 }
 
@@ -291,7 +301,7 @@ router.get('/history', function(req, res, next) {
 
 	});
 
-	// OLD
+	// OLD SIMULATOR
 	// var couch = req.app.get('couch');
 
 	// var limit = wheelConfig['history']; //max
@@ -299,7 +309,7 @@ router.get('/history', function(req, res, next) {
 	// 	limit = req.query.limit;
 	// }
 
-	// var params   = {include_docs: true, limit: limit, descending: true} //TODO: sort by tsLast, needs to be done manually
+	// var params   = {include_docs: true, limit: limit, descending: true} 
 	// couch.list(params).then((body) => {
 
 	//   	var results = [];
@@ -320,7 +330,7 @@ router.get('/history', function(req, res, next) {
 	// 		results.push(calculateSessionParameters(doc));
 	// 	});
 	  	
-	//   	var totalDistance = 0; //TODO: read from whole database //in km
+	//   	var totalDistance = 0; 
 	//   	for(var i=0; i<results.length; i++) {
 	//   		if(results[i]['km']) {
 	//   			totalDistance += results[i]['km'];	
@@ -402,41 +412,68 @@ router.post('/like', function(req, res, next) {
 	var io = req.app.get('socketio');
 
 	if(req.body.deviceId) {
-		console.log('like received for: ' + req.body.deviceId);
+		console.log('+ like received for: ' + req.body.deviceId);
+		// console.log(req.body);
 
 		if(devices[req.body.deviceId]) {
 			var device = devices[req.body.deviceId];
 
 			if(device.session && device.session.status==='active') {
-				device.session.likes += 1
+				device.session.likes += 1;
 
 				var likedBy;
-				if(req.body.likedBy) {
+				if(req.body.hasOwnProperty('likedBy')) {
 					likedBy = req.body.likedBy;
 				} else {
 					likedBy = 'unknown';
 				}
 
-				if(device.session.likedBy) {
-					device.session.likedBy[req.body.likedBy] += 1;
-				} else {
-					device.session.likedBy = {};
-					device.session.likedBy[req.body.likedBy] = 1;
+				if(!device.session.likedBy.hasOwnProperty(likedBy)) {
+					device.session.likedBy[likedBy] = 0;
 				}
+				device.session.likedBy[likedBy] += 1;
 
 				// console.log('session in cache updated:');
 				// console.log(device.session);
 
-				io.emit('like', devices);
+				var result = {};
+				result[device['session'].deviceId] = device;
+
+				io.emit('like', result);
 				res.send('ok');
 
 		  	} else {
-		  		console.log("No active session in progress.");
 		  		res.send('error: no active session.');
 		  	}
+		} else {
+			res.send('error: no device found: ' + req.body.deviceId);
 		}
-	} else { //no device specified > TODO: award like to whichever device is currently active
-		res.send('error: no device specified.');
+	} else { //no device specified
+
+		console.log('+ generic like received');
+		
+		var likedBy;
+		if(req.hasOwnProperty('body') && req.body.likedBy) {
+			likedBy = req.body.likedBy;
+		} else {
+			likedBy = 'unknown';
+		}
+
+		var deviceIds = Object.keys(devices); 
+		for(var i=0; i<deviceIds.length; i++) {
+			var device = devices[deviceIds[i]];
+			if(device.session && device.session.status==='active') {
+				console.log('- adding like to: ' + deviceIds[i]);
+				device.session.likes += 1;
+
+				if(!device.session.likedBy.hasOwnProperty(likedBy)) {
+					device.session.likedBy[likedBy] = 0;
+				}
+				device.session.likedBy[likedBy] += 1;
+				}
+		}
+		io.emit('like', devices);
+		res.send('ok');
 	}
 
 });
@@ -480,6 +517,7 @@ router.post('/rpm', function(req, res, next) {
   			"rotations": req.body.rotations,
   			"tsStart": req.body.ts,
   			"likes": 0,
+  			"likedBy": {},
   			"mouseId": mouseId,
   			"cheerCondition": cheerCondition
   		};
@@ -518,14 +556,15 @@ router.post('/rpm', function(req, res, next) {
   			}
 
   			// a cheerTimer consists of a startDelay, a scheduleDelay, and a density
-  			var cheerTimer = devices[session.deviceId].timer;
-  			if(session.cheerCondition != 'none' && wheelConfig.cheerbot.enabled) {
-	  			if(cheerTimer) { //already active cheerTimer
-	  				clearInterval(cheerTimer);
-	  			}
+  			// var cheerTimer = devices[session.deviceId].timer;
+  			if(session.status==='active' && session.cheerCondition != 'none' && wheelConfig.cheerbot.enabled) {
+	  			// if(cheerTimer) { //already active cheerTimer
+	  			// 	clearInterval(cheerTimer);
+	  			// }
   				var startDelay = getRandomInt(wheelConfig.cheerbot.minDelay, wheelConfig.cheerbot.maxDelay) * 1000; //ms
   				console.log('+ setting cheerTimer: ' + startDelay + ' (' + session.cheerCondition + ')');
-				devices[session.deviceId]['timer'] = setTimeout(cheerTimerTriggered, startDelay, session, req.app, req.get('host'), wheelConfig.cheerbot);
+				// devices[session.deviceId]['timer'] = setTimeout(cheerTimerTriggered, startDelay, session, req.app, req.get('host'), wheelConfig.cheerbot);
+				setTimeout(cheerTimerTriggered, startDelay, session.deviceId, req.app, req.get('host'), wheelConfig.cheerbot);
 	  			// console.log(cheerTimer);
 				// req.app.set('cheerTimer', cheerTimer);
   			}
@@ -610,41 +649,11 @@ router.post('/rpm', function(req, res, next) {
 	  						console.log('- cheerTimer cancelled');
 	  						clearTimeout(devices[session.deviceId].timer);
 	  					} else {
-	  						console.log('no timer active.');
+	  						// console.log('no timer active.');
 	  					}
 	  				} else {
 	  					// console.log('no active session');
 	  				}
-
-	  				//add likes when session becomes inactive
-	  				// if(session.status==='inactive') {
-				  	// 	couch.get(session.sessionId)
-				  	// 	.then((body) => {
-				  	// 		console.log("Updating likes in session: " + session.sessionId + " (" + session.likes + " likes)");
-				  	// 		// console.log(body);
-				  	// 		console.log(session);
-
-				  	// 		// update values
-				  	// 		body['likes'] = session.likes;
-				  	// 		body['likedBy'] = session.likedBy;
-				  	// 		couch.insert(body).then((resp) => {
-					  // 			if(resp.ok) {
-					  // 				console.log("Session updated: " + resp.id);
-					  // 			} else {
-					  // 				console.log("ERROR updating session:")
-					  // 				console.log(resp);
-					  // 			}
-					  // 		})
-					  // 		.catch((err) => {
-					  // 			// console.log("Could not add like to session: " + req.body.sessionId);
-					  // 			// console.log(err);
-					  // 		});
-				  	// 	})
-				  	// 	.catch((err) => {
-				  	// 		console.log("Could not find session: " + req.body.sessionId);
-				  	// 		// console.log(err);
-				  	// 	});
-				  	// }
 
 	  				console.log(session);
 	  				res.send(session);
@@ -659,18 +668,10 @@ router.post('/rpm', function(req, res, next) {
   		})
   		.catch((err) => {
   			console.log("Could not find session: " + req.body.sessionId);
-  			// console.log(err);
-  			res.send(404);
+  			console.log(err);
+  			res.send("Could not find session: " + req.body.sessionId);
   		});
   	}
-	// io.emit('update', {
-	// 	"deviceId": req.body.deviceId,
-	// 	"sessionId": req.body.sessionId,
-	// 	"rpm": req.body.rpm,
-	// 	"rotations": req.body.rpm,
-	// 	"ts": req.body.ts
-	// });
-
 });
 
 

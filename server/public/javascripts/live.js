@@ -48,10 +48,14 @@ socket.on('update', function(data) {
 		}
 	} else {
 		document.getElementById(data.deviceId).style.animationDuration = 0 + 's';
-		$ratwheel_speed.textContent = '0';
-		$ratwheel_likes.textContent = '0';
-		$armwheel_speed.textContent = '0';
-		$armwheel_likes.textContent = '0';
+		if(data.deviceId=='ratwheel') {
+			$ratwheel_speed.textContent = '0';
+			$ratwheel_likes.textContent = '0';
+		}
+		if(data.deviceId=='armwheel') {
+			$armwheel_speed.textContent = '0';
+			$armwheel_likes.textContent = '0';
+		}
 	}
 	
 
@@ -77,11 +81,11 @@ socket.on('like', function(data) {
 	console.log('like received:');
 	console.log(data);
 
-	if(data.ratwheel && data.ratwheel.session) {
+	if(data.ratwheel && data.ratwheel.session && data.ratwheel.session.status==='active') {
 		$ratwheel_likes.textContent = data.ratwheel.session.likes;
 	}
 
-	if(data.armwheel && data.armwheel.session) {
+	if(data.armwheel && data.armwheel.session && data.armwheel.session.status==='active') {
 		$armwheel_likes.textContent = data.armwheel.session.likes;
 	}
 });
