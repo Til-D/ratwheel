@@ -217,7 +217,7 @@ router.get('/simulator', function(req, res, next) {
 			if (wheelConfig[sessions[i].deviceId]) {
 				diameter = wheelConfig[sessions[i].deviceId].diameter;
 			} else {
-				console.log('WARNING: no diameter specified for: ' + sessions[i].deviceId);
+				// console.log('WARNING: no diameter specified for: ' + sessions[i].deviceId);
 				diameter = 1;
 			}
 			sessions[i]['diameter'] = diameter;
@@ -281,7 +281,7 @@ router.get('/history', function(req, res, next) {
 			if (wheelConfig[doc.deviceId]) {
 				diameter = wheelConfig[doc.deviceId].diameter;
 			} else {
-				console.log('WARNING: no diameter specified for: ' + doc.deviceId);
+				// console.log('WARNING: no diameter specified for: ' + doc.deviceId);
 				diameter = 1;
 			}
 			doc['diameter'] = diameter;
@@ -526,7 +526,8 @@ router.post('/rpm', function(req, res, next) {
   			"likesTs": [],
   			"likedBy": {},
   			"mouseId": mouseId,
-  			"cheerCondition": cheerCondition
+  			"cheerCondition": cheerCondition,
+  			"version": process.env.VERSION
   		};
   		req.app.set('mouseId', ++mouseId);
 
